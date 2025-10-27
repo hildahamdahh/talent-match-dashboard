@@ -173,150 +173,87 @@ if st.button("✨ Generate Job Profile & Variable Score"):
 
 
 # ==========================================================
-# 🧱 STEP 6: JOB DETAILS FORM (AI + Add/Remove + Dropdown)
+# 🧱 STEP 6: JOB DETAILS FORM (Interactive, with AI suggestions)
 # ==========================================================
 st.markdown("---")
 st.subheader("3️⃣ Job Details Form")
 
-# --- tampilkan hanya setelah AI profile ada ---
 if "ai_job_profile" not in st.session_state:
-    st.info("⚠️ Jalankan dulu '✨ Generate Job Profile' supaya AI bisa isi form otomatis.")
-    st.stop()
+    st.info("⚠️ Jalankan dulu 'Generate Job Profile' agar hasil AI bisa diolah di sini.")
+else:
+    st.caption("Gunakan hasil AI Job Profile di atas sebagai referensi. Kamu bisa edit, tambah, atau hapus poin di bawah ini.")
 
-# --- parsing AI text jadi list poin ---
-def parse_ai_sections(ai_text):
-    sections = {"responsibilities": [], "qualifications": [], "competencies": []}
-    current = None
-    for line in ai_text.split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        if "responsibilit" in line.lower() or "job description" in line.lower():
-            current = "responsibilities"
-            continue
-        elif "requirement" in line.lower() or "qualification" in line.lower():
-            current = "qualifications"
-            continue
-        elif "competenc" in line.lower() or "skill" in line.lower():
-            current = "competencies"
-            continue
-        if current:
-            clean = line.lstrip("-•1234567890. ").strip()
-            if clean and len(clean.split()) > 2:
-                sections[current].append(clean)
-    return sections
+    # --- Ekstraksi poin-poin dari hasil AI untuk prefill ---
+    ai_text = st.session_state["ai_job_profile"]
+    import re
+    lines = re.split(r"\n|•|-|\d+\.", ai_text)
+    lines = [l.strip() for l in lines if len(l.strip()) > 3]
 
-
-# --- inisialisasi data job form ---
-if "job_form" not in st.session_state:
-    parsed = parse_ai_sections(st.session_state["ai_job_profile"])
-    st.session_state.job_form = {
-        "responsibilities": parsed.get("responsibilities", []),
-        "work_inputs": [],
-        "work_outputs": [],
-        "qualifications": parsed.get("qualifications", []),
-        "competencies": parsed.get("competencies", [])
+    # Coba kelompokkan berdasarkan kata kunci
+    categories = {
+        "Responsibilities": [l for l in lines if re.search(r"responsibilit|duty|role", l, re.I)],
+        "Work Inputs": [l for l in lines if re.search(r"input|data|information|report", l, re.I)],
+        "Work Outputs": [l for l in lines if re.search(r"output|deliverable|result", l, re.I)],
+        "Qualifications": [l for l in lines if re.search(r"degree|experience|education|skill|knowledge", l, re.I)],
+        "Competencies": [l for l in lines if re.search(r"competenc|thinking|adapt|detail|collaborat|problem", l, re.I)]
     }
 
-# --- daftar opsi umum untuk dropdown ---
-default_options = {
-    "responsibilities": [
-        "Analyze large datasets to extract insights",
-        "Develop and maintain dashboards",
-        "Collaborate with cross-functional teams",
-        "Ensure data accuracy and integrity",
-        "Automate repetitive reporting tasks"
-    ],
-    "work_inputs": [
-        "Raw transactional data",
-        "Customer feedback reports",
-        "Sales and marketing metrics",
-        "Operational performance data"
-    ],
-    "work_outputs": [
-        "Monthly performance reports",
-        "KPI dashboards",
-        "Ad-hoc analysis summaries",
-        "Data-driven recommendations"
-    ],
-    "qualifications": [
-        "Bachelor’s degree in Statistics, Mathematics, or related field",
-        "Proficiency in SQL and Python",
-        "Experience with data visualization tools",
-        "Strong analytical and problem-solving skills"
-    ],
-    "competencies": [
-        "Analytical Thinking",
-        "Attention to Detail",
-        "Collaboration",
-        "Adaptability",
-        "Time Management"
-    ]
-}
+    # Default list kosong untuk category tanpa hasil
+    for k in categories:
+        if not categories[k]:
+            categories[k] = []
 
-# --- fungsi tambah & hapus item ---
-def add_item(section):
-    st.session_state.job_form[section].append("")
+    # --- State sementara untuk list item tiap kategori ---
+    if "job_details_data" not in st.session_state:
+        st.session_state.job_details_data = categories
 
-def remove_item(section, index):
-    st.session_state.job_form[section].pop(index)
+    # --- Fungsi bantu untuk tambah item ---
+    def add_item(cat, new_text):
+        if new_text and new_text.strip():
+            st.session_state.job_details_data[cat].append(new_text.strip())
 
-# --- render tiap bagian form ---
-section_labels = {
-    "responsibilities": "🧩 Key Responsibilities",
-    "work_inputs": "📥 Work Inputs",
-    "work_outputs": "📤 Work Outputs",
-    "qualifications": "🎓 Qualifications",
-    "competencies": "💡 Competencies"
-}
+    # --- Fungsi bantu untuk hapus item ---
+    def remove_item(cat, idx):
+        st.session_state.job_details_data[cat].pop(idx)
 
-for section, label in section_labels.items():
-    st.markdown(f"**{label}**")
+    # --- Tampilan tiap kategori ---
+    for category, items in st.session_state.job_details_data.items():
+        with st.expander(f"📂 {category}", expanded=True):
+            st.markdown('<div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">', unsafe_allow_html=True)
 
-    items = st.session_state.job_form[section]
+            for idx, item in enumerate(items):
+                cols = st.columns([0.85, 0.1, 0.05])
+                cols[0].markdown(f"• {item}")
+                if cols[1].button("✏️", key=f"edit_{category}_{idx}"):
+                    new_val = st.text_input(f"Edit {category} item:", item, key=f"input_{category}_{idx}")
+                    if new_val:
+                        st.session_state.job_details_data[category][idx] = new_val
+                if cols[2].button("❌", key=f"remove_{category}_{idx}"):
+                    remove_item(category, idx)
+                    st.rerun()
 
-    for i, val in enumerate(items):
-        cols = st.columns([6, 2, 1])
-        with cols[0]:
-            st.session_state.job_form[section][i] = st.text_input(
-                f"{label} {i+1}",
-                value=val,
-                key=f"{section}_{i}"
-            )
-        with cols[1]:
-            new_val = st.selectbox(
-                "Quick Add",
-                ["— Select from template —"] + default_options[section],
-                key=f"dropdown_{section}_{i}"
-            )
-            if new_val != "— Select from template —":
-                st.session_state.job_form[section][i] = new_val
-        with cols[2]:
-            if st.button("❌", key=f"del_{section}_{i}"):
-                remove_item(section, i)
-                st.experimental_rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
 
-    # tombol Add di bawah setiap section
-    if st.button(f"➕ Add {label}", key=f"add_{section}"):
-        add_item(section)
-        st.experimental_rerun()
+            # Tambah item baru
+            new_item = st.text_input(f"Tambah item di {category}:", key=f"new_{category}")
+            if st.button(f"Add", key=f"add_{category}"):
+                add_item(category, new_item)
+                st.rerun()
 
-    st.markdown("---")
+    # --- Simpan ke Supabase ---
+    if st.button("💾 Save Job Details"):
+        try:
+            for category, items in st.session_state.job_details_data.items():
+                for item in items:
+                    data_insert = {
+                        "role_name": selected_role,
+                        "job_level": selected_job_level,
+                        "category": category,
+                        "item": item,
+                        "created_at": datetime.now().isoformat()
+                    }
+                    supabase.table("job_details_items").insert(data_insert).execute()
+            st.success("✅ Semua Job Details berhasil disimpan ke Supabase!")
 
-# --- tombol simpan ---
-if st.button("💾 Save Job Details"):
-    try:
-        data_insert = {
-            "role_name": selected_role,
-            "job_level": selected_job_level,
-            "responsibilities": json.dumps(st.session_state.job_form["responsibilities"]),
-            "work_inputs": json.dumps(st.session_state.job_form["work_inputs"]),
-            "work_outputs": json.dumps(st.session_state.job_form["work_outputs"]),
-            "qualifications": json.dumps(st.session_state.job_form["qualifications"]),
-            "competencies": json.dumps(st.session_state.job_form["competencies"]),
-            "created_at": datetime.now().isoformat()
-        }
-        supabase.table("job_details").insert(data_insert).execute()
-        st.success("✅ Job Details berhasil disimpan ke Supabase!")
-    except Exception as e:
-        st.error(f"Gagal menyimpan ke Supabase: {e}")
+        except Exception as e:
+            st.error(f"Gagal menyimpan ke Supabase: {e}")
