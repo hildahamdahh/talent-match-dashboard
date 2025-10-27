@@ -154,18 +154,18 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
 
                 # --- Tampilkan hasil AI Job Profile dengan format rapi ---
-                # --- Tampilkan hasil AI Job Profile dengan format rapi ---
                 if ai_profile and not ai_profile.startswith("⚠️"):
                     st.subheader("🧠 AI-Generated Job Profile")
                 
                     import re
                 
-                    # 1️⃣ Hapus semua tag HTML
-                    clean_text = re.sub(r"<[^>]+>", "", ai_profile)
+                    # --- 1️⃣ Hapus semua tag HTML dan escape karakter ---
+                    clean_text = re.sub(r"<[^>]*>", "", ai_profile)  # hapus semua <...>
+                    clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
                 
-                    # 2️⃣ Pisahkan bagian berdasarkan heading umum
+                    # --- 2️⃣ Coba pisahkan berdasarkan bagian umum ---
                     sections = {"Job Requirements": "", "Job Description": "", "Key Competencies": ""}
-                    current_section = "Job Requirements"  # default
+                    current_section = "Job Requirements"
                 
                     for line in clean_text.splitlines():
                         line = line.strip()
@@ -180,33 +180,25 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                         elif re.search("competenc", line, re.I):
                             current_section = "Key Competencies"
                             continue
-                
-                        # Tambahkan isi ke section aktif
                         sections[current_section] += line + " "
                 
-                    # 3️⃣ Format dengan bullet dan spacing rapi
+                    # --- 3️⃣ Format rapi dengan markdown ---
                     def format_section(text):
-                        bullets = re.split(r"•|-", text)
-                        formatted = "<br>".join(f"• {b.strip()}" for b in bullets if b.strip())
+                        bullets = re.split(r"•|-|\d+\.", text)
+                        formatted = "\n".join(f"- {b.strip()}" for b in bullets if b.strip())
                         return formatted
                 
-                    st.markdown(
-                        f"""
-                        <div style="padding:1.2rem; border-radius:15px; background-color:#f9f9f9;">
-                            <h4 style="margin-bottom:0.5rem;">📝 <b>Job Requirements</b></h4>
-                            <p style="margin-top:0; line-height:1.6;">{format_section(sections["Job Requirements"])}</p>
+                    st.markdown("### 📝 Job Requirements")
+                    st.markdown(format_section(sections["Job Requirements"]))
                 
-                            <h4 style="margin-bottom:0.5rem;">📋 <b>Job Description</b></h4>
-                            <p style="margin-top:0; line-height:1.6;">{format_section(sections["Job Description"])}</p>
+                    st.markdown("### 📋 Job Description")
+                    st.markdown(format_section(sections["Job Description"]))
                 
-                            <h4 style="margin-bottom:0.5rem;">💡 <b>Key Competencies</b></h4>
-                            <p style="margin-top:0; line-height:1.6;">{format_section(sections["Key Competencies"])}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown("### 💡 Key Competencies")
+                    st.markdown(format_section(sections["Key Competencies"]))
                 else:
                     st.warning(ai_profile)
+
 
 
 
