@@ -171,9 +171,7 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
 
 
-# ==========================================================
-# 🎯 STEP 6: Job Details (AI Generated Dropdown Version)
-# ==========================================================
+
 # ==========================================================
 # 🎯 STEP 6: Job Details (Refined UI + Short Competencies)
 # ==========================================================
@@ -227,8 +225,8 @@ def generate_job_details(role_name, job_level):
     prompt = f"""
     You are an HR assistant helping define job details.
     Generate 2 concise bullet lists:
-    1️⃣ Key Responsibilities (5–7 items)
-    2️⃣ Key Competencies (5–7 items, each 1–3 words only)
+    1️⃣ Key Responsibilities (10–12 items)
+    2️⃣ Key Competencies (10–12 items, each 1–3 words only)
     for a {job_level} {role_name}.
     Keep them short and specific.
     """
