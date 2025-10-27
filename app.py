@@ -176,7 +176,11 @@ if st.button("✨ Generate Job Profile & Variable Score"):
 # ==========================================================
 # 🎯 STEP 6 (REVISED): JOB DETAILS FORM (Requirements + Competencies)
 # ==========================================================
+# ==========================================================
+# 🎯 STEP 6 (Final Polished): Job Details Form (2 Section)
+# ==========================================================
 import streamlit as st
+import re
 
 st.markdown("---")
 st.subheader("3️⃣ Job Details Form")
@@ -186,72 +190,92 @@ if "ai_job_profile" not in st.session_state:
 else:
     ai_text = st.session_state["ai_job_profile"]
 
-    # Ekstrak kemungkinan poin dari hasil AI (sederhana, bisa ditingkatkan nanti)
-    import re
-    possible_requirements = re.findall(r"(?i)(?:requirement[s]?:|qualification[s]?:)([\s\S]*?)(?:competenc|$)", ai_text)
-    possible_competencies = re.findall(r"(?i)(?:competenc[y|ies]:)([\s\S]*)", ai_text)
-
+    # ====== Ekstraksi otomatis poin dari hasil AI ======
     def extract_bullets(text):
         bullets = re.findall(r"[-•]\s*(.+)", text)
         return [b.strip() for b in bullets if len(b.strip()) > 2]
 
-    req_list = extract_bullets(possible_requirements[0]) if possible_requirements else []
-    comp_list = extract_bullets(possible_competencies[0]) if possible_competencies else []
+    # Pisahkan bagian Requirements & Competencies dari teks AI
+    req_raw = re.findall(r"(?i)(?:requirement[s]?:|qualification[s]?:)([\s\S]*?)(?:competenc|$)", ai_text)
+    comp_raw = re.findall(r"(?i)(?:competenc[y|ies]:)([\s\S]*)", ai_text)
+    req_list = extract_bullets(req_raw[0]) if req_raw else []
+    comp_list = extract_bullets(comp_raw[0]) if comp_raw else []
 
-    # Simpan di session state agar dinamis
+    # ====== Persingkat setiap poin jadi singkat dan ringkas ======
+    def shorten_point(point):
+        point = re.sub(r"\bexperience\b.*", "", point, flags=re.I)
+        point = re.sub(r"\b(proficiency in|ability to|knowledge of)\b", "", point, flags=re.I)
+        point = re.sub(r"[.,;].*", "", point)
+        point = re.sub(r"\s{2,}", " ", point)
+        return point.strip().capitalize()
+
+    req_list = [shorten_point(p) for p in req_list if p]
+    comp_list = [shorten_point(p) for p in comp_list if p]
+
+    # ====== State management ======
     if "requirements" not in st.session_state:
         st.session_state.requirements = []
     if "competencies" not in st.session_state:
         st.session_state.competencies = []
 
+    # ====== Fungsi Render Section ======
     def render_section(title, key, ai_suggestions):
         st.markdown(f"### {title}")
-        with st.container(border=True):
-            # Input field & dropdown
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                new_item = st.text_input(f"Add an item ({title})", key=f"input_{key}")
-            with col2:
-                add_btn = st.button("➕ Add", key=f"add_{key}")
 
-            # Dropdown suggestion
+        # Kotak border halus
+        with st.container(border=True):
+            # Input dan tombol sejajar
+            cols = st.columns([8, 1])
+            with cols[0]:
+                new_item = st.text_input("Add an item", key=f"input_{key}", label_visibility="collapsed")
+            with cols[1]:
+                add_btn = st.button("➕", key=f"add_{key}")
+
+            # Dropdown dari AI suggestions
             if ai_suggestions:
                 selected_suggestion = st.selectbox(
-                    f"or select from AI suggestions",
+                    "AI Suggestions",
                     options=[""] + ai_suggestions,
-                    key=f"dropdown_{key}"
+                    key=f"dropdown_{key}",
+                    label_visibility="collapsed",
+                    help="Pilih dari hasil AI"
                 )
-                if selected_suggestion and st.button("➕ Add from AI", key=f"add_ai_{key}"):
-                    st.session_state[key].append(selected_suggestion)
+                if selected_suggestion:
+                    if st.button("Add from AI", key=f"add_ai_{key}"):
+                        if selected_suggestion not in st.session_state[key]:
+                            st.session_state[key].append(selected_suggestion)
 
-            # Add manually typed item
+            # Tambahkan item manual
             if add_btn and new_item.strip():
                 st.session_state[key].append(new_item.strip())
                 st.session_state[f"input_{key}"] = ""  # reset input
 
-            # Display current items
-            if st.session_state[key]:
-                for i, item in enumerate(st.session_state[key]):
-                    col_a, col_b, col_c = st.columns([10, 1, 1])
-                    with col_a:
-                        st.markdown(f"- {item}")
-                    with col_b:
-                        if st.button("✏️", key=f"edit_{key}_{i}"):
-                            edited_text = st.text_input(f"Edit {title}", value=item, key=f"editbox_{key}_{i}")
-                            if st.button("Save", key=f"save_{key}_{i}"):
-                                st.session_state[key][i] = edited_text
-                                st.rerun()
-                    with col_c:
-                        if st.button("❌", key=f"del_{key}_{i}"):
-                            st.session_state[key].pop(i)
-                            st.rerun()
-            else:
-                st.caption("Belum ada item yang ditambahkan.")
+            # List item dengan bullet, edit, delete
+            for i, item in enumerate(st.session_state[key]):
+                cols = st.columns([10, 1, 1])
+                with cols[0]:
+                    st.markdown(f"• **{item}**")
+                with cols[1]:
+                    if st.button("✏️", key=f"edit_{key}_{i}"):
+                        st.session_state[f"edit_index_{key}"] = i
+                with cols[2]:
+                    if st.button("❌", key=f"del_{key}_{i}"):
+                        st.session_state[key].pop(i)
+                        st.rerun()
 
+                # Mode edit
+                if st.session_state.get(f"edit_index_{key}") == i:
+                    edited_text = st.text_input("Edit item", value=item, key=f"editbox_{key}_{i}")
+                    if st.button("Save", key=f"save_{key}_{i}"):
+                        st.session_state[key][i] = edited_text
+                        del st.session_state[f"edit_index_{key}"]
+                        st.rerun()
+
+    # ====== Render dua section utama ======
     render_section("Requirements", "requirements", req_list)
     render_section("Competencies", "competencies", comp_list)
 
-    # Tombol Simpan
+    # ====== Tombol Simpan ======
     if st.button("💾 Save Job Details"):
         try:
             data_insert = {
