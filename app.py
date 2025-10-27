@@ -8,13 +8,15 @@ Original file is located at
 """
 
 # ==========================================================
-# 🎯 Talent Match Intelligence Dashboard (FINAL VERSION)
+# 🎯 Talent Match Intelligence Dashboard (FINAL + JOB DETAILS)
 # ==========================================================
 import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
 import requests
 import json
+import re
+from datetime import datetime
 
 # --- Koneksi ke Supabase ---
 url = "https://cckdfjxowgowgxufnhnj.supabase.co"
@@ -153,54 +155,54 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 # --- 2️⃣ Generate AI Job Profile ---
                 ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
 
-                # --- Tampilkan hasil AI Job Profile dengan format rapi ---
+                # --- Tampilkan hasil AI Job Profile ---
                 if ai_profile and not ai_profile.startswith("⚠️"):
                     st.subheader("🧠 AI-Generated Job Profile")
-                
-                    import re
-                
-                    # --- 1️⃣ Hapus semua tag HTML dan escape karakter ---
-                    clean_text = re.sub(r"<[^>]*>", "", ai_profile)  # hapus semua <...>
+
+                    clean_text = re.sub(r"<[^>]*>", "", ai_profile)
                     clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
-                
-                    # --- 2️⃣ Coba pisahkan berdasarkan bagian umum ---
-                    sections = {"Job Requirements": "", "Job Description": "", "Key Competencies": ""}
-                    current_section = "Job Requirements"
-                
-                    for line in clean_text.splitlines():
-                        line = line.strip()
-                        if not line:
-                            continue
-                        if re.search("requirement", line, re.I):
-                            current_section = "Job Requirements"
-                            continue
-                        elif re.search("description", line, re.I):
-                            current_section = "Job Description"
-                            continue
-                        elif re.search("competenc", line, re.I):
-                            current_section = "Key Competencies"
-                            continue
-                        sections[current_section] += line + " "
-                
-                    # --- 3️⃣ Format rapi dengan markdown ---
-                    def format_section(text):
-                        bullets = re.split(r"•|-|\d+\.", text)
-                        formatted = "\n".join(f"- {b.strip()}" for b in bullets if b.strip())
-                        return formatted
-                
-                    st.markdown("### 📝 Job Requirements")
-                    st.markdown(format_section(sections["Job Requirements"]))
-                
-                    st.markdown("### 📋 Job Description")
-                    st.markdown(format_section(sections["Job Description"]))
-                
-                    st.markdown("### 💡 Key Competencies")
-                    st.markdown(format_section(sections["Key Competencies"]))
+
+                    st.write(clean_text)
+                    st.session_state["ai_job_profile"] = clean_text  # simpan untuk langkah selanjutnya
                 else:
                     st.warning(ai_profile)
 
-
-
-
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
+
+
+# ==========================================================
+# 🧱 STEP 6: JOB DETAILS FORM (Manual Entry)
+# ==========================================================
+st.markdown("---")
+st.subheader("3️⃣ Job Details Form")
+
+if "ai_job_profile" not in st.session_state:
+    st.info("⚠️ Jalankan dulu 'Generate Job Profile' untuk mendapatkan referensi isi form ini.")
+else:
+    st.caption("Gunakan hasil AI Job Profile di atas sebagai referensi untuk mengisi kolom berikut:")
+
+    responsibilities = st.text_area("🧩 Key Responsibilities (pisahkan dengan enter)", height=150)
+    work_inputs = st.text_area("📥 Work Inputs", height=100)
+    work_outputs = st.text_area("📤 Work Outputs", height=100)
+    qualifications = st.text_area("🎓 Qualifications", height=120)
+    competencies = st.text_area("💡 Competencies", height=120)
+
+    if st.button("💾 Save Job Details"):
+        try:
+            data_insert = {
+                "role_name": selected_role,
+                "job_level": selected_job_level,
+                "responsibilities": json.dumps(responsibilities.split("\n")),
+                "work_inputs": json.dumps(work_inputs.split("\n")),
+                "work_outputs": json.dumps(work_outputs.split("\n")),
+                "qualifications": json.dumps(qualifications.split("\n")),
+                "competencies": json.dumps(competencies.split("\n")),
+                "created_at": datetime.now().isoformat()
+            }
+
+            supabase.table("job_details").insert(data_insert).execute()
+            st.success("✅ Job Details berhasil disimpan ke Supabase!")
+
+        except Exception as e:
+            st.error(f"Gagal menyimpan ke Supabase: {e}")
