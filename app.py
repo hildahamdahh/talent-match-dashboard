@@ -118,7 +118,7 @@ def generate_job_profile(role_name, job_level, role_purpose):
         return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
 
 # ==========================================================
-# 🚀 STEP 5: Combined Button — Jalankan SQL + AI Generator
+# 🚀 STEP 5: COMBINED BUTTON (SQL + AI)
 # ==========================================================
 if st.button("✨ Generate Job Profile & Variable Score"):
     if not selected_ids:
@@ -134,7 +134,6 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                     df_result = pd.DataFrame(data)
                     st.success(f"Hasil untuk role: {selected_role} (Job Level: {selected_job_level})")
 
-                    # --- Visualisasi Final Match Rate ---
                     rank_df = (
                         df_result[["employee_id", "final_match_rate"]]
                         .drop_duplicates()
@@ -148,9 +147,55 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                     st.warning("Tidak ada hasil ditemukan dari scoring.")
 
                 # --- 2️⃣ Generate AI Job Profile ---
-                st.subheader("🧠 AI-Generated Job Profile")
-                ai_output = generate_job_profile(selected_role, selected_job_level, role_purpose)
-                st.markdown(ai_output)
+                ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
+
+                # --- Tampilkan hasil AI Job Profile dengan format rapi ---
+                if ai_profile and not ai_profile.startswith("⚠️"):
+                    st.subheader("🧠 AI-Generated Job Profile")
+
+                    text = ai_profile.strip()
+
+                    sections = {
+                        "Job Requirements": "",
+                        "Job Description": "",
+                        "Key Competencies": "",
+                    }
+
+                    current_section = None
+                    for line in text.splitlines():
+                        line = line.strip()
+                        if "requirement" in line.lower():
+                            current_section = "Job Requirements"
+                            continue
+                        elif "description" in line.lower():
+                            current_section = "Job Description"
+                            continue
+                        elif "competenc" in line.lower():
+                            current_section = "Key Competencies"
+                            continue
+
+                        if current_section and line:
+                            sections[current_section] += line + " "
+
+                    # --- Format tampilan HTML ---
+                    st.markdown("""
+                    <div style="padding:1rem; border-radius:10px; background-color:#f9f9f9;">
+                        <h4 style="margin-bottom:0.5rem;">📋 <b>Job Requirements</b></h4>
+                        <p style="margin-top:0;">{}</p>
+
+                        <h4 style="margin-bottom:0.5rem;">🧾 <b>Job Description</b></h4>
+                        <p style="margin-top:0;">{}</p>
+
+                        <h4 style="margin-bottom:0.5rem;">💡 <b>Key Competencies</b></h4>
+                        <p style="margin-top:0;">{}</p>
+                    </div>
+                    """.format(
+                        sections["Job Requirements"].replace("\n", "<br>"),
+                        sections["Job Description"].replace("\n", "<br>"),
+                        sections["Key Competencies"].replace("\n", "<br>"),
+                    ), unsafe_allow_html=True)
+                else:
+                    st.warning(ai_profile)
 
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
