@@ -21,29 +21,25 @@ st.title("Talent Match Intelligence Dashboard")
 
 st.title("1. Role Information")
 
-# --- Ambil data dari Supabase
-data = supabase.table("talent_benchmark").select("*").execute().data
+# --- Ambil data dari tabel benchmark ---
+response = supabase.table("talent_benchmark").select("*").execute()
+data = response.data
+df_benchmark = pd.DataFrame(data)
 
-# --- Dropdown Role Name
-role_names = sorted(list(set([d["role_name"] for d in data])))
-selected_role = st.selectbox("Role Name", role_names)
+# --- Dropdown bertingkat ---
+role_name = st.selectbox("Pilih Role Name", sorted(df_benchmark["role_name"].unique()))
 
-# --- Auto-filter Job Level berdasar Role Name
-job_levels = sorted(list(set([d["job_level"] for d in data if d["role_name"] == selected_role])))
-selected_job_level = st.selectbox("Job Level", job_levels)
+# Filter job level sesuai role
+filtered_job = df_benchmark[df_benchmark["role_name"] == role_name]
+job_level = st.selectbox("Pilih Job Level", sorted(filtered_job["job_level"].unique()))
 
-# --- Role Purpose
-role_purpose = st.text_area("Role Purpose", placeholder="1–2 sentences to describe role outcome")
+# Filter employee sesuai role + job level
+filtered_emp = filtered_job[filtered_job["job_level"] == job_level]
+employee_ids = filtered_emp["employee_id"].tolist()
+selected_employees = st.multiselect("Pilih Employee Benchmark (max 3)", employee_ids, max_selections=3)
 
-st.markdown("Example: Ensure production targets are met with optimal quality and cost efficiency")
-
-# --- Employee Benchmarking
-employees = [
-    f"{d['employee_id']} - {d['fullname']} ({d['role_name']})"
-    for d in data
-]
-selected_benchmarks = st.multiselect("Select Employee Benchmarking (max 3)", employees, max_selections=3)
-selected_ids = [s.split(" - ")[0] for s in selected_benchmarks]
+# --- Tambahkan field deskripsi role purpose ---
+role_purpose = st.text_area("Role Purpose", placeholder="Deskripsikan tujuan role ini secara singkat...")
 
 # --- Tombol Generate
 if st.button("Generate Job Description & Variable Score"):
