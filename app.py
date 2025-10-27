@@ -24,7 +24,8 @@ supabase: Client = create_client(url, key)
 # ==========================================================
 # 🔑 OPENROUTER API
 # ==========================================================
-OPENROUTER_API_KEY = "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"
+
+OPENROUTER_API_KEY = st.secrets["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"]
 
 # ==========================================================
 # ⚙️ KONFIGURASI HALAMAN
