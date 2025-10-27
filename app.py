@@ -160,7 +160,7 @@ if st.button(" Jalankan Analisis"):
       ON t.employee_id = g.employee_id AND t.tgv_name = g.tgv_name
     LEFT JOIN final_match f
       ON t.employee_id = f.employee_id
-    ORDER BY f.final_match_rate DESC, t.employee_id, t.tgv_name, t.tv_name;
+    ORDER BY f.final_match_rate DESC, t.employee_id, t.tgv_name, t.tv_name
     """
 
     # --- Jalankan query ---
