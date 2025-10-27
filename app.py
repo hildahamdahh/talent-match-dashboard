@@ -10,83 +10,98 @@ Original file is located at
 import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
-import requests
-import json
 
 # --- Koneksi ke Supabase ---
 url = "https://cckdfjxowgowgxufnhnj.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
 supabase: Client = create_client(url, key)
 
+# --- Konfigurasi halaman ---
 st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
-st.title("Talent Match Intelligence Dashboard")
+st.title("🎯 Talent Match Intelligence Dashboard")
 
-# --- Ambil data role dari Supabase ---
-response = supabase.table("talent_benchmark").select("role_name, job_level").execute()
-roles_df = pd.DataFrame(response.data).drop_duplicates(subset=["role_name", "job_level"])
+# ==========================================================
+# 🧩 STEP 1: Ambil data benchmark dari Supabase
+# ==========================================================
+try:
+    response = supabase.table("talent_benchmark").select("*").execute()
+    benchmark_data = response.data
+except Exception as e:
+    st.error(f"Gagal mengambil data: {e}")
+    st.stop()
 
-# --- Dropdown untuk Role ---
-role_selected = st.selectbox("Pilih Role", sorted(roles_df["role_name"].unique()))
+if not benchmark_data:
+    st.warning("Tabel 'talent_benchmark' masih kosong.")
+    st.stop()
 
-# --- Auto isi Job Level ---
-job_levels = roles_df[roles_df["role_name"] == role_selected]["job_level"].unique()
-job_level_selected = st.selectbox("Job Level", job_levels)
+df_benchmark = pd.DataFrame(benchmark_data)
 
-# --- Ambil employee benchmark dari role tsb ---
-benchmark_response = supabase.table("talent_benchmark")\
-    .select("employee_id")\
-    .eq("role_name", role_selected)\
-    .execute()
-benchmark_ids = [row["employee_id"] for row in benchmark_response.data]
+# ==========================================================
+# 🧭 STEP 2: Input dari user (parameter runtime)
+# ==========================================================
 
-# --- Tombol utama ---
-if st.button("⚡ Generate Job Description & Variable Score"):
-    with st.spinner("Generating job profile and matching... ⏳"):
+st.subheader("1️⃣ Role Information")
 
-        # --- 1️⃣ Call OpenRouter for AI Job Profile ---
-        prompt = f"""
-        Generate a structured job profile for role {role_selected} ({job_level_selected} level).
-        Include:
-        - Job Requirements (bullet points)
-        - Job Description (2-3 sentences)
-        - Key Competencies (bullet points)
-        - Then suggest JSON variable score weights for categories: technical_skills, soft_skills, experience.
-        """
+# --- Pilih Role Name ---
+role_names = sorted(df_benchmark["role_name"].dropna().unique())
+selected_role = st.selectbox("Role Name", role_names)
 
-        ai_response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {st.secrets['OPENROUTER_API_KEY']}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "openai/gpt-4o-mini",
-                "messages": [{"role": "user", "content": prompt}],
-            }
-        )
+# --- Job Level otomatis mengikuti role yang dipilih ---
+job_levels = df_benchmark.loc[df_benchmark["role_name"] == selected_role, "job_level"].unique()
+selected_job_level = st.selectbox("Job Level", job_levels)
 
-        if ai_response.status_code == 200:
-            ai_result = ai_response.json()["choices"][0]["message"]["content"]
-            st.subheader("🧠 AI-Generated Job Profile")
-            st.markdown(ai_result)
-        else:
-            st.error(f"Error OpenRouter: {ai_response.text}")
+# --- Role Purpose (manual input) ---
+role_purpose = st.text_area(
+    "Role Purpose",
+    placeholder="Contoh: Ensure production targets are met with optimal quality and cost efficiency"
+)
 
-        # --- 2️⃣ Call Supabase RPC for match scoring ---
-        if benchmark_ids:
-            match_response = supabase.rpc("talent_match_scoring", {"benchmark_ids": benchmark_ids}).execute()
+# ==========================================================
+# 👥 STEP 3: Pilih Employee Benchmark
+# ==========================================================
+st.subheader("2️⃣ Employee Benchmarking")
 
-            if match_response.data:
-                df = pd.DataFrame(match_response.data)
-                st.success(f"Hasil Match Rate untuk {role_selected} ({job_level_selected})")
-                st.dataframe(df)
+employee_options = [
+    f"{row['employee_id']} - {row['fullname']} ({row['role_name']})"
+    for _, row in df_benchmark.iterrows()
+]
+selected_employees = st.multiselect(
+    "Pilih maksimal 3 karyawan sebagai benchmark:",
+    options=employee_options,
+    max_selections=3
+)
 
-                # Chart ranking
-                rank_df = df[['employee_id', 'final_match_rate']].drop_duplicates().sort_values(
-                    by='final_match_rate', ascending=False
+# Ambil employee_id-nya saja
+selected_ids = [emp.split(" - ")[0] for emp in selected_employees]
+
+# ==========================================================
+# 🚀 STEP 4: Jalankan Analisis
+# ==========================================================
+if st.button("🔍 Jalankan Analisis"):
+    if not selected_ids:
+        st.warning("Pilih minimal 1 benchmark employee terlebih dahulu.")
+    else:
+        try:
+            # Jalankan function di Supabase
+            result = supabase.rpc("talent_match_scoring", {"benchmark_ids": selected_ids}).execute()
+            data = result.data
+
+            if data:
+                df_result = pd.DataFrame(data)
+                st.success(f"Hasil untuk role: {selected_role} (Job Level: {selected_job_level})")
+                st.dataframe(df_result)
+
+                # --- Visualisasi Final Match Rate ---
+                rank_df = (
+                    df_result[["employee_id", "final_match_rate"]]
+                    .drop_duplicates()
+                    .sort_values(by="final_match_rate", ascending=False)
                 )
-                st.bar_chart(rank_df.set_index('employee_id'))
+
+                st.subheader("📊 Final Match Rate per Employee")
+                st.bar_chart(rank_df.set_index("employee_id"))
+
             else:
-                st.warning("Tidak ada hasil match rate ditemukan.")
-        else:
-            st.warning("Tidak ada benchmark employee untuk role ini.")
+                st.warning("Tidak ada hasil ditemukan.")
+        except Exception as e:
+            st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
