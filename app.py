@@ -13,13 +13,11 @@ import pandas as pd
 
 # --- Koneksi ke Supabase ---
 url = "https://cckdfjxowgowgxufnhnj.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiOiJjY2tkZmp4b3dnb3dneHVmbmhuaSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzYxNTQ2ODQ4LCJleHAiOjIwNzcxMjI4NDh9.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
 supabase: Client = create_client(url, key)
 
 st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
 st.title("Talent Match Intelligence Dashboard")
-
-st.title("1. Role Information")
 
 # --- Ambil data dari tabel benchmark ---
 response = supabase.table("talent_benchmark").select("*").execute()
@@ -41,31 +39,21 @@ selected_employees = st.multiselect("Pilih Employee Benchmark (max 3)", employee
 # --- Tambahkan field deskripsi role purpose ---
 role_purpose = st.text_area("Role Purpose", placeholder="Deskripsikan tujuan role ini secara singkat...")
 
-# --- Tombol Generate
-if st.button("Generate Job Description & Variable Score"):
-    if not selected_ids:
-        st.warning("Please select at least one benchmark employee.")
-    else:
-        result = supabase.rpc("talent_match_scoring", {"benchmarks_ids": selected_ids}).execute()
-        st.dataframe(result.data)
-        
-# -- Analysis        
 if st.button("🔍 Jalankan Analisis"):
-    emp_ids = [x.strip() for x in benchmark_input.split(",") if x.strip()]
-    array_input = "{" + ",".join(emp_ids) + "}"
-
-    # --- Panggil function di Supabase ---
-    data = supabase.rpc("talent_match_scoring", {"benchmark_ids": emp_ids}).execute()
-
-    if data.data:
-        df = pd.DataFrame(data.data)
-        st.success(f"Hasil untuk benchmark: {', '.join(emp_ids)}")
-        st.dataframe(df)
-
-        # --- Tampilkan final match rate ranking ---
-        rank_df = df[['employee_id', 'final_match_rate']].drop_duplicates().sort_values(
-            by='final_match_rate', ascending=False
-        )
-        st.bar_chart(rank_df.set_index('employee_id'))
+    if not selected_employees:
+        st.warning("Pilih minimal 1 employee untuk benchmark.")
     else:
-        st.warning("Tidak ada hasil ditemukan.")
+        data = supabase.rpc("talent_match_scoring", {"benchmark_ids": selected_employees}).execute()
+
+        if data.data:
+            df_result = pd.DataFrame(data.data)
+            st.success(f"Hasil untuk benchmark: {', '.join(selected_employees)}")
+            st.dataframe(df_result)
+
+            # --- Tampilkan final match rate ranking ---
+            rank_df = df_result[['employee_id', 'final_match_rate']].drop_duplicates().sort_values(
+                by='final_match_rate', ascending=False
+            )
+            st.bar_chart(rank_df.set_index('employee_id'))
+        else:
+            st.warning("Tidak ada hasil ditemukan.")
