@@ -11,6 +11,7 @@ import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
 import requests
+import json
 
 # --- Koneksi ke Supabase ---
 url = "https://cckdfjxowgowgxufnhnj.supabase.co"
