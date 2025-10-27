@@ -78,33 +78,77 @@ selected_employees = st.multiselect(
 selected_ids = [emp.split(" - ")[0] for emp in selected_employees]
 
 # ==========================================================
-# 🚀 STEP 4: Jalankan Analisis
+# 🧠 STEP 4: AI Job Profile Generator (OpenRouter)
 # ==========================================================
-if st.button("🔍 Jalankan Analisis"):
+def generate_job_profile(role_name, job_level, role_purpose):
+    """
+    Generate AI-based job profile (requirements, description, competencies)
+    using OpenRouter API.
+    """
+    headers = {
+        "Authorization": f"Bearer {st.secrets['OPENROUTER_API_KEY']}",
+        "Content-Type": "application/json",
+    }
+
+    prompt = f"""
+    You are an HR Talent Intelligence Assistant.
+    Generate a concise and structured job profile for a {job_level} {role_name}.
+    Include 3 sections:
+    1. Job Requirements
+    2. Job Description
+    3. Key Competencies
+    Format in a Markdown table with columns [Column, Desc].
+    Context/Purpose: {role_purpose}
+    """
+
+    payload = {
+        "model": "openai/gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You generate concise structured job profiles for HR use."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, data=json.dumps(payload))
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
+    else:
+        return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
+
+# ==========================================================
+# 🚀 STEP 5: Combined Button — Jalankan SQL + AI Generator
+# ==========================================================
+if st.button("✨ Generate Job Profile & Variable Score"):
     if not selected_ids:
         st.warning("Pilih minimal 1 benchmark employee terlebih dahulu.")
     else:
-        try:
-            # Jalankan function di Supabase
-            result = supabase.rpc("talent_match_scoring", {"benchmark_ids": selected_ids}).execute()
-            data = result.data
+        with st.spinner("⏳ Menjalankan analisis dan AI generation..."):
+            try:
+                # --- 1️⃣ Jalankan Function di Supabase ---
+                result = supabase.rpc("talent_match_scoring", {"benchmark_ids": selected_ids}).execute()
+                data = result.data
 
-            if data:
-                df_result = pd.DataFrame(data)
-                st.success(f"Hasil untuk role: {selected_role} (Job Level: {selected_job_level})")
-                st.dataframe(df_result)
+                if data:
+                    df_result = pd.DataFrame(data)
+                    st.success(f"Hasil untuk role: {selected_role} (Job Level: {selected_job_level})")
 
-                # --- Visualisasi Final Match Rate ---
-                rank_df = (
-                    df_result[["employee_id", "final_match_rate"]]
-                    .drop_duplicates()
-                    .sort_values(by="final_match_rate", ascending=False)
-                )
+                    # --- Visualisasi Final Match Rate ---
+                    rank_df = (
+                        df_result[["employee_id", "final_match_rate"]]
+                        .drop_duplicates()
+                        .sort_values(by="final_match_rate", ascending=False)
+                    )
 
-                st.subheader("📊 Final Match Rate per Employee")
-                st.bar_chart(rank_df.set_index("employee_id"))
+                    st.subheader("📊 Final Match Rate per Employee")
+                    st.dataframe(rank_df)
+                    st.bar_chart(rank_df.set_index("employee_id"))
+                else:
+                    st.warning("Tidak ada hasil ditemukan dari scoring.")
 
-            else:
-                st.warning("Tidak ada hasil ditemukan.")
-        except Exception as e:
-            st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
+                # --- 2️⃣ Generate AI Job Profile ---
+                st.subheader("🧠 AI-Generated Job Profile")
+                ai_output = generate_job_profile(selected_role, selected_job_level, role_purpose)
+                st.markdown(ai_output)
+
+            except Exception as e:
+                st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
