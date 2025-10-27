@@ -172,88 +172,96 @@ if st.button("✨ Generate Job Profile & Variable Score"):
 
 
 
+
 # ==========================================================
-# 🧱 STEP 6: JOB DETAILS FORM (Interactive, with AI suggestions)
+# 🎯 STEP 6 (REVISED): JOB DETAILS FORM (Requirements + Competencies)
 # ==========================================================
+import streamlit as st
+
 st.markdown("---")
 st.subheader("3️⃣ Job Details Form")
 
 if "ai_job_profile" not in st.session_state:
-    st.info("⚠️ Jalankan dulu 'Generate Job Profile' agar hasil AI bisa diolah di sini.")
+    st.info("⚠️ Jalankan dulu 'Generate Job Profile' agar AI dapat mengisi dropdown otomatis.")
 else:
-    st.caption("Gunakan hasil AI Job Profile di atas sebagai referensi. Kamu bisa edit, tambah, atau hapus poin di bawah ini.")
-
-    # --- Ekstraksi poin-poin dari hasil AI untuk prefill ---
     ai_text = st.session_state["ai_job_profile"]
+
+    # Ekstrak kemungkinan poin dari hasil AI (sederhana, bisa ditingkatkan nanti)
     import re
-    lines = re.split(r"\n|•|-|\d+\.", ai_text)
-    lines = [l.strip() for l in lines if len(l.strip()) > 3]
+    possible_requirements = re.findall(r"(?i)(?:requirement[s]?:|qualification[s]?:)([\s\S]*?)(?:competenc|$)", ai_text)
+    possible_competencies = re.findall(r"(?i)(?:competenc[y|ies]:)([\s\S]*)", ai_text)
 
-    # Coba kelompokkan berdasarkan kata kunci
-    categories = {
-        "Responsibilities": [l for l in lines if re.search(r"responsibilit|duty|role", l, re.I)],
-        "Work Inputs": [l for l in lines if re.search(r"input|data|information|report", l, re.I)],
-        "Work Outputs": [l for l in lines if re.search(r"output|deliverable|result", l, re.I)],
-        "Qualifications": [l for l in lines if re.search(r"degree|experience|education|skill|knowledge", l, re.I)],
-        "Competencies": [l for l in lines if re.search(r"competenc|thinking|adapt|detail|collaborat|problem", l, re.I)]
-    }
+    def extract_bullets(text):
+        bullets = re.findall(r"[-•]\s*(.+)", text)
+        return [b.strip() for b in bullets if len(b.strip()) > 2]
 
-    # Default list kosong untuk category tanpa hasil
-    for k in categories:
-        if not categories[k]:
-            categories[k] = []
+    req_list = extract_bullets(possible_requirements[0]) if possible_requirements else []
+    comp_list = extract_bullets(possible_competencies[0]) if possible_competencies else []
 
-    # --- State sementara untuk list item tiap kategori ---
-    if "job_details_data" not in st.session_state:
-        st.session_state.job_details_data = categories
+    # Simpan di session state agar dinamis
+    if "requirements" not in st.session_state:
+        st.session_state.requirements = []
+    if "competencies" not in st.session_state:
+        st.session_state.competencies = []
 
-    # --- Fungsi bantu untuk tambah item ---
-    def add_item(cat, new_text):
-        if new_text and new_text.strip():
-            st.session_state.job_details_data[cat].append(new_text.strip())
+    def render_section(title, key, ai_suggestions):
+        st.markdown(f"### {title}")
+        with st.container(border=True):
+            # Input field & dropdown
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                new_item = st.text_input(f"Add an item ({title})", key=f"input_{key}")
+            with col2:
+                add_btn = st.button("➕ Add", key=f"add_{key}")
 
-    # --- Fungsi bantu untuk hapus item ---
-    def remove_item(cat, idx):
-        st.session_state.job_details_data[cat].pop(idx)
+            # Dropdown suggestion
+            if ai_suggestions:
+                selected_suggestion = st.selectbox(
+                    f"or select from AI suggestions",
+                    options=[""] + ai_suggestions,
+                    key=f"dropdown_{key}"
+                )
+                if selected_suggestion and st.button("➕ Add from AI", key=f"add_ai_{key}"):
+                    st.session_state[key].append(selected_suggestion)
 
-    # --- Tampilan tiap kategori ---
-    for category, items in st.session_state.job_details_data.items():
-        with st.expander(f"📂 {category}", expanded=True):
-            st.markdown('<div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">', unsafe_allow_html=True)
+            # Add manually typed item
+            if add_btn and new_item.strip():
+                st.session_state[key].append(new_item.strip())
+                st.session_state[f"input_{key}"] = ""  # reset input
 
-            for idx, item in enumerate(items):
-                cols = st.columns([0.85, 0.1, 0.05])
-                cols[0].markdown(f"• {item}")
-                if cols[1].button("✏️", key=f"edit_{category}_{idx}"):
-                    new_val = st.text_input(f"Edit {category} item:", item, key=f"input_{category}_{idx}")
-                    if new_val:
-                        st.session_state.job_details_data[category][idx] = new_val
-                if cols[2].button("❌", key=f"remove_{category}_{idx}"):
-                    remove_item(category, idx)
-                    st.rerun()
+            # Display current items
+            if st.session_state[key]:
+                for i, item in enumerate(st.session_state[key]):
+                    col_a, col_b, col_c = st.columns([10, 1, 1])
+                    with col_a:
+                        st.markdown(f"- {item}")
+                    with col_b:
+                        if st.button("✏️", key=f"edit_{key}_{i}"):
+                            edited_text = st.text_input(f"Edit {title}", value=item, key=f"editbox_{key}_{i}")
+                            if st.button("Save", key=f"save_{key}_{i}"):
+                                st.session_state[key][i] = edited_text
+                                st.rerun()
+                    with col_c:
+                        if st.button("❌", key=f"del_{key}_{i}"):
+                            st.session_state[key].pop(i)
+                            st.rerun()
+            else:
+                st.caption("Belum ada item yang ditambahkan.")
 
-            st.markdown("</div>", unsafe_allow_html=True)
+    render_section("Requirements", "requirements", req_list)
+    render_section("Competencies", "competencies", comp_list)
 
-            # Tambah item baru
-            new_item = st.text_input(f"Tambah item di {category}:", key=f"new_{category}")
-            if st.button(f"Add", key=f"add_{category}"):
-                add_item(category, new_item)
-                st.rerun()
-
-    # --- Simpan ke Supabase ---
+    # Tombol Simpan
     if st.button("💾 Save Job Details"):
         try:
-            for category, items in st.session_state.job_details_data.items():
-                for item in items:
-                    data_insert = {
-                        "role_name": selected_role,
-                        "job_level": selected_job_level,
-                        "category": category,
-                        "item": item,
-                        "created_at": datetime.now().isoformat()
-                    }
-                    supabase.table("job_details_items").insert(data_insert).execute()
-            st.success("✅ Semua Job Details berhasil disimpan ke Supabase!")
-
+            data_insert = {
+                "role_name": selected_role,
+                "job_level": selected_job_level,
+                "requirements": st.session_state["requirements"],
+                "competencies": st.session_state["competencies"],
+                "created_at": datetime.now().isoformat()
+            }
+            supabase.table("job_details").insert(data_insert).execute()
+            st.success("✅ Job Details berhasil disimpan ke Supabase!")
         except Exception as e:
             st.error(f"Gagal menyimpan ke Supabase: {e}")
