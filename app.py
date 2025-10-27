@@ -8,8 +8,173 @@ Original file is located at
 """
 
 # ==========================================================
-# 🧱 STEP 6: JOB DETAILS FORM (AI + Editable Form)
+# 🎯 Talent Match Intelligence Dashboard (FINAL + JOB DETAILS)
 # ==========================================================
+import streamlit as st
+from supabase import create_client, Client
+import pandas as pd
+import requests
+import json
+import re
+from datetime import datetime
+
+# --- Koneksi ke Supabase ---
+url = "https://cckdfjxowgowgxufnhnj.supabase.co"
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
+supabase: Client = create_client(url, key)
+
+# --- Page Setup ---
+st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
+st.title("🎯 Talent Match Intelligence Dashboard")
+
+# ==========================================================
+# 🧩 STEP 1: Ambil data benchmark dari Supabase
+# ==========================================================
+try:
+    response = supabase.table("talent_benchmark").select("*").execute()
+    benchmark_data = response.data
+except Exception as e:
+    st.error(f"Gagal mengambil data: {e}")
+    st.stop()
+
+if not benchmark_data:
+    st.warning("Tabel 'talent_benchmark' masih kosong.")
+    st.stop()
+
+df_benchmark = pd.DataFrame(benchmark_data)
+
+# ==========================================================
+# 🧭 STEP 2: Input dari user (parameter runtime)
+# ==========================================================
+st.subheader("1️⃣ Role Information")
+
+role_names = sorted(df_benchmark["role_name"].dropna().unique())
+selected_role = st.selectbox("Role Name", role_names)
+
+filtered_df = df_benchmark[df_benchmark["role_name"] == selected_role]
+job_levels = filtered_df["job_level"].dropna().unique()
+selected_job_level = st.selectbox("Job Level", job_levels)
+
+role_purpose = st.text_area(
+    "Role Purpose",
+    placeholder="Contoh: Ensure production targets are met with optimal quality and cost efficiency"
+)
+
+# ==========================================================
+# 👥 STEP 3: Pilih Employee Benchmark
+# ==========================================================
+st.subheader("2️⃣ Employee Benchmarking")
+
+employee_options = [
+    f"{row['employee_id']} - {row['fullname']} ({row['role_name']})"
+    for _, row in filtered_df.iterrows()
+]
+selected_employees = st.multiselect(
+    "Pilih maksimal 3 karyawan sebagai benchmark:",
+    options=employee_options,
+    max_selections=3
+)
+selected_ids = [emp.split(" - ")[0] for emp in selected_employees]
+
+# ==========================================================
+# 🧠 STEP 4: AI Job Profile Generator (OpenRouter)
+# ==========================================================
+def generate_job_profile(role_name, job_level, role_purpose):
+    try:
+        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+    except Exception:
+        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+        "X-Title": "Talent Match Intelligence",
+        "Content-Type": "application/json",
+    }
+
+    prompt = f"""
+    You are an HR Talent Intelligence Assistant.
+    Generate a clear, structured job profile for a {job_level} {role_name}.
+    Include:
+    1️⃣ Job Requirements
+    2️⃣ Job Description
+    3️⃣ Key Competencies
+    Context: {role_purpose}
+    """
+
+    payload = {
+        "model": "openai/gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You generate concise job profiles for HR."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers=headers,
+        data=json.dumps(payload)
+    )
+
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
+    else:
+        return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
+
+
+# ==========================================================
+# 🚀 STEP 5: COMBINED BUTTON (SQL + AI)
+# ==========================================================
+if st.button("✨ Generate Job Profile & Variable Score"):
+    if not selected_ids:
+        st.warning("Pilih minimal 1 benchmark employee terlebih dahulu.")
+    else:
+        with st.spinner("⏳ Menjalankan analisis dan AI generation..."):
+            try:
+                # --- 1️⃣ Jalankan Function di Supabase ---
+                result = supabase.rpc("talent_match_scoring", {"benchmark_ids": selected_ids}).execute()
+                data = result.data
+
+                if data:
+                    df_result = pd.DataFrame(data)
+                    st.success(f"Hasil untuk role: {selected_role} (Job Level: {selected_job_level})")
+
+                    rank_df = (
+                        df_result[["employee_id", "final_match_rate"]]
+                        .drop_duplicates()
+                        .sort_values(by="final_match_rate", ascending=False)
+                    )
+
+                    st.subheader("📊 Final Match Rate per Employee")
+                    st.dataframe(rank_df)
+                    st.bar_chart(rank_df.set_index("employee_id"))
+                else:
+                    st.warning("Tidak ada hasil ditemukan dari scoring.")
+
+                # --- 2️⃣ Generate AI Job Profile ---
+                ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
+
+                # --- Tampilkan hasil AI Job Profile ---
+                if ai_profile and not ai_profile.startswith("⚠️"):
+                    st.subheader("🧠 AI-Generated Job Profile")
+
+                    clean_text = re.sub(r"<[^>]*>", "", ai_profile)
+                    clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
+
+                    st.write(clean_text)
+                    st.session_state["ai_job_profile"] = clean_text  # simpan untuk langkah selanjutnya
+                else:
+                    st.warning(ai_profile)
+
+            except Exception as e:
+                st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
+
+
+# ==========================================================
+# 🧱 STEP 6: JOB DETAILS FORM (Manual Entry)
+# ==========================================================
+
 st.markdown("---")
 st.subheader("3️⃣ Job Details Form")
 
@@ -115,5 +280,8 @@ else:
             }
             supabase.table("job_details").insert(data_insert).execute()
             st.success("✅ Job Details berhasil disimpan ke Supabase!")
+        except Exception as e:
+            st.error(f"Gagal menyimpan ke Supabase: {e}")
+
         except Exception as e:
             st.error(f"Gagal menyimpan ke Supabase: {e}")
