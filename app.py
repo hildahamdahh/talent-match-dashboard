@@ -19,12 +19,41 @@ supabase: Client = create_client(url, key)
 st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
 st.title("Talent Match Intelligence Dashboard")
 
-# --- Input benchmark employee IDs ---
-benchmark_input = st.text_input(
-    "Masukkan Employee ID Benchmark (pisahkan dengan koma)",
-    "EMP100958, EMP101451, EMP100362"
-)
+st.title("1. Role Information")
 
+# --- Ambil data dari Supabase
+data = supabase.table("talent_benchmark").select("*").execute().data
+
+# --- Dropdown Role Name
+role_names = sorted(list(set([d["role_name"] for d in data])))
+selected_role = st.selectbox("Role Name", role_names)
+
+# --- Auto-filter Job Level berdasar Role Name
+job_levels = sorted(list(set([d["job_level"] for d in data if d["role_name"] == selected_role])))
+selected_job_level = st.selectbox("Job Level", job_levels)
+
+# --- Role Purpose
+role_purpose = st.text_area("Role Purpose", placeholder="1–2 sentences to describe role outcome")
+
+st.markdown("Example: Ensure production targets are met with optimal quality and cost efficiency")
+
+# --- Employee Benchmarking
+employees = [
+    f"{d['employee_id']} - {d['fullname']} ({d['role_name']})"
+    for d in data
+]
+selected_benchmarks = st.multiselect("Select Employee Benchmarking (max 3)", employees, max_selections=3)
+selected_ids = [s.split(" - ")[0] for s in selected_benchmarks]
+
+# --- Tombol Generate
+if st.button("Generate Job Description & Variable Score"):
+    if not selected_ids:
+        st.warning("Please select at least one benchmark employee.")
+    else:
+        result = supabase.rpc("talent_match_scoring", {"benchmarks_ids": selected_ids}).execute()
+        st.dataframe(result.data)
+        
+# -- Analysis        
 if st.button("🔍 Jalankan Analisis"):
     emp_ids = [x.strip() for x in benchmark_input.split(",") if x.strip()]
     array_input = "{" + ",".join(emp_ids) + "}"
