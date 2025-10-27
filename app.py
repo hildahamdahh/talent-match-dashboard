@@ -21,7 +21,10 @@ url = "https://cckdfjxowgowgxufnhnj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
 supabase: Client = create_client(url, key)
 
-
+# ==========================================================
+# 🔑 OPENROUTER API
+# ==========================================================
+OPENROUTER_API_KEY = "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"
 
 # ==========================================================
 # ⚙️ KONFIGURASI HALAMAN
