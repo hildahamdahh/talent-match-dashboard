@@ -41,7 +41,7 @@ WITH selected_talent_ids AS (
   SELECT UNNEST(ARRAY['EMP100958', 'EMP101451', 'EMP100362']) AS employee_id
 ),
 
---  BASELINE DINAMIS
+-- BASELINE DINAMIS
 -- Hitung median hanya untuk skor numeric
 baseline_dynamic AS (
   SELECT
@@ -66,7 +66,7 @@ baseline_weight AS (
   FROM baseline_weight
 ),
 
---  DATA EMPLOYEE
+-- DATA EMPLOYEE
 emp_clean AS (
   SELECT
     employee_id,
@@ -82,7 +82,7 @@ emp_clean AS (
   FROM emp
 ),
 
---  JOIN SEMUA
+-- JOIN SEMUA
 joined_data AS (
   SELECT
     e.employee_id,
@@ -102,7 +102,7 @@ joined_data AS (
   LEFT JOIN baseline_weight b ON e.tv_name = b.tv_name
 ),
 
---  TV MATCH RATE (gabungan logic numeric & categorical)
+-- TV MATCH RATE (gabungan logic numeric & categorical)
 tv_match AS (
   SELECT
     employee_id,
@@ -126,7 +126,7 @@ tv_match AS (
   FROM joined_data
 ),
 
---️ TGV MATCH RATE
+-- TGV MATCH RATE
 tgv_match AS (
   SELECT
     employee_id,
