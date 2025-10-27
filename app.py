@@ -174,14 +174,42 @@ if st.button("✨ Generate Job Profile & Variable Score"):
 # ==========================================================
 # 🎯 STEP 6: Job Details (AI Generated Dropdown Version)
 # ==========================================================
+# ==========================================================
+# 🎯 STEP 6: Job Details (Refined UI + Short Competencies)
+# ==========================================================
 import re
 
 st.markdown("---")
-st.subheader("3️⃣ Job Details")
-
+st.markdown("### 3️⃣ Job Details")
 st.caption("All fields below are required. Please add at least one item for each category.")
 
-# --- Generate AI suggestions khusus untuk job details ---
+# --- Custom CSS untuk kecilin ikon & heading ---
+st.markdown("""
+    <style>
+        .small-title {
+            font-size: 1rem !important;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            margin-top: 1rem;
+        }
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        .item-text {
+            flex-grow: 1;
+        }
+        .small-btn {
+            font-size: 0.8rem !important;
+            padding: 0 3px !important;
+            margin-left: 4px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Generate AI suggestions khusus job details ---
 def generate_job_details(role_name, job_level):
     try:
         OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
@@ -198,18 +226,17 @@ def generate_job_details(role_name, job_level):
 
     prompt = f"""
     You are an HR assistant helping define job details.
-    Generate 2 separate lists in bullet format:
-    1️⃣ Key Responsibilities
-    2️⃣ Key Competencies
+    Generate 2 concise bullet lists:
+    1️⃣ Key Responsibilities (5–7 items)
+    2️⃣ Key Competencies (5–7 items, each 1–3 words only)
     for a {job_level} {role_name}.
-    Each list should contain 5–7 concise points, short and practical.
-    Return only plain text with clear section headers.
+    Keep them short and specific.
     """
 
     payload = {
         "model": "openai/gpt-4o-mini",
         "messages": [
-            {"role": "system", "content": "You are an HR AI generating structured job details."},
+            {"role": "system", "content": "You generate short, structured job detail lists for HR systems."},
             {"role": "user", "content": prompt}
         ]
     }
@@ -234,7 +261,7 @@ def generate_job_details(role_name, job_level):
         st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
         return None
 
-# --- Load AI suggestions (only once) ---
+# --- Load AI suggestions ---
 if "job_details_ai" not in st.session_state:
     with st.spinner("🤖 Generating AI-based job details..."):
         ai_details = generate_job_details(selected_role, selected_job_level)
@@ -253,38 +280,27 @@ if "selected_competencies" not in st.session_state:
 
 # --- Fungsi render tiap kategori ---
 def render_detail_section(title, key, ai_options):
-    st.markdown(f"### {title}")
+    st.markdown(f'<div class="small-title">{title}</div>', unsafe_allow_html=True)
 
-    # Drop-down + add sejajar
     cols = st.columns([6, 1])
     with cols[0]:
         selected = st.selectbox(f"Select {title.lower()}", options=[""] + ai_options, key=f"select_{key}", label_visibility="collapsed")
     with cols[1]:
-        if st.button("➕", key=f"add_{key}"):
+        if st.button("➕ Add", key=f"add_{key}"):
             if selected and selected not in st.session_state[key]:
                 st.session_state[key].append(selected)
                 st.rerun()
 
-    # Tampilkan hasil yang sudah ditambahkan
     for i, item in enumerate(st.session_state[key]):
-        cols = st.columns([10, 0.8, 0.8])
-        with cols[0]:
-            st.markdown(f"• {item}")
-        with cols[1]:
-            if st.button("✏️", key=f"edit_{key}_{i}"):
-                st.session_state[f"edit_index_{key}"] = i
-        with cols[2]:
-            if st.button("❌", key=f"del_{key}_{i}"):
-                st.session_state[key].pop(i)
-                st.rerun()
-
-        # Mode edit
-        if st.session_state.get(f"edit_index_{key}") == i:
-            edited_text = st.text_input("Edit", value=item, key=f"editbox_{key}_{i}")
-            if st.button("Save", key=f"save_{key}_{i}"):
-                st.session_state[key][i] = edited_text
-                del st.session_state[f"edit_index_{key}"]
-                st.rerun()
+        st.markdown(f"""
+            <div class="item-row">
+                <div class="item-text">• {item}</div>
+                <div>
+                    <button class="small-btn" style="border:none;background:none;" onClick="window.location.reload()">✏️</button>
+                    <button class="small-btn" style="border:none;background:none;" onClick="window.location.reload()">❌</button>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
 
 # --- Render dua bagian ---
 render_detail_section("Key Responsibilities", "selected_responsibilities", ai_details["responsibilities"])
