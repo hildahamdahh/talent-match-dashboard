@@ -36,13 +36,13 @@ if st.button(" Jalankan Analisis"):
     ...
     ORDER BY f.final_match_rate DESC, t.employee_id, t.tgv_name, t.tv_name;
     """
-    -- PARAMETER INPUT
+-- PARAMETER INPUT
 WITH selected_talent_ids AS (
   SELECT UNNEST(ARRAY['EMP100958', 'EMP101451', 'EMP100362']) AS employee_id
 ),
 
 -- BASELINE DINAMIS
--- Hitung median hanya untuk skor numeric
+-- HITUNG MEDIAN UNTUK SKOR NUMERIC
 baseline_dynamic AS (
   SELECT
     e.tv_name,
