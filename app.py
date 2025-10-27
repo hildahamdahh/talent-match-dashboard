@@ -154,53 +154,60 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
 
                 # --- Tampilkan hasil AI Job Profile dengan format rapi ---
-               
+                # --- Tampilkan hasil AI Job Profile dengan format rapi ---
                 if ai_profile and not ai_profile.startswith("⚠️"):
                     st.subheader("🧠 AI-Generated Job Profile")
                 
                     import re
                 
-                    # --- Pisahkan bagian berdasarkan heading umum ---
-                    sections = {
-                        "Job Requirements": "",
-                        "Job Description": "",
-                        "Key Competencies": ""
-                    }
+                    # 1️⃣ Hapus semua tag HTML
+                    clean_text = re.sub(r"<[^>]+>", "", ai_profile)
                 
-                    current_section = None
-                    for line in ai_profile.splitlines():
+                    # 2️⃣ Pisahkan bagian berdasarkan heading umum
+                    sections = {"Job Requirements": "", "Job Description": "", "Key Competencies": ""}
+                    current_section = "Job Requirements"  # default
+                
+                    for line in clean_text.splitlines():
                         line = line.strip()
-                        # Deteksi heading
-                        if re.search(r"requirement", line, re.I):
+                        if not line:
+                            continue
+                        if re.search("requirement", line, re.I):
                             current_section = "Job Requirements"
                             continue
-                        elif re.search(r"description", line, re.I):
+                        elif re.search("description", line, re.I):
                             current_section = "Job Description"
                             continue
-                        elif re.search(r"competenc", line, re.I):
+                        elif re.search("competenc", line, re.I):
                             current_section = "Key Competencies"
                             continue
                 
-                        if current_section and line:
-                            # Bersihkan sisa tag HTML yang mungkin bocor
-                            clean_line = re.sub(r"<[^>]+>", "", line)
-                            sections[current_section] += clean_line + " "
+                        # Tambahkan isi ke section aktif
+                        sections[current_section] += line + " "
                 
-                    # --- Tampilan akhir yang lebih rapi ---
-                    st.markdown(f"""
-                        <div style="padding:1.5rem; border-radius:15px; background-color:#f9f9f9; border:1px solid #eee;">
-                            <h4 style="margin-bottom:0.6rem;">📝 <b>Job Requirements</b></h4>
-                            <p style="margin-top:0; line-height:1.6;">{sections["Job Requirements"].strip().replace('-', '<br>•')}</p>
+                    # 3️⃣ Format dengan bullet dan spacing rapi
+                    def format_section(text):
+                        bullets = re.split(r"•|-", text)
+                        formatted = "<br>".join(f"• {b.strip()}" for b in bullets if b.strip())
+                        return formatted
                 
-                            <h4 style="margin-bottom:0.6rem;">📋 <b>Job Description</b></h4>
-                            <p style="margin-top:0; line-height:1.6;">{sections["Job Description"].strip().replace('-', '<br>•')}</p>
+                    st.markdown(
+                        f"""
+                        <div style="padding:1.2rem; border-radius:15px; background-color:#f9f9f9;">
+                            <h4 style="margin-bottom:0.5rem;">📝 <b>Job Requirements</b></h4>
+                            <p style="margin-top:0; line-height:1.6;">{format_section(sections["Job Requirements"])}</p>
                 
-                            <h4 style="margin-bottom:0.6rem;">💡 <b>Key Competencies</b></h4>
-                            <p style="margin-top:0; line-height:1.6;">{sections["Key Competencies"].strip().replace('-', '<br>•')}</p>
+                            <h4 style="margin-bottom:0.5rem;">📋 <b>Job Description</b></h4>
+                            <p style="margin-top:0; line-height:1.6;">{format_section(sections["Job Description"])}</p>
+                
+                            <h4 style="margin-bottom:0.5rem;">💡 <b>Key Competencies</b></h4>
+                            <p style="margin-top:0; line-height:1.6;">{format_section(sections["Key Competencies"])}</p>
                         </div>
-                    """, unsafe_allow_html=True)
+                        """,
+                        unsafe_allow_html=True,
+                    )
                 else:
                     st.warning(ai_profile)
+
 
 
             except Exception as e:
