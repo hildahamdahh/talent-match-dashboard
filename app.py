@@ -78,7 +78,6 @@ selected_ids = [emp.split(" - ")[0] for emp in selected_employees]
 # 🧠 STEP 4: AI Job Profile Generator (OpenRouter)
 # ==========================================================
 def generate_job_profile(role_name, job_level, role_purpose):
-    """Generate AI-based job profile (requirements, description, competencies)."""
     try:
         OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
     except Exception:
@@ -87,24 +86,25 @@ def generate_job_profile(role_name, job_level, role_purpose):
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+        "X-Title": "Talent Match Intelligence",
         "Content-Type": "application/json",
     }
 
     prompt = f"""
     You are an HR Talent Intelligence Assistant.
-    Generate a clear, structured, and professional job profile for a {job_level} {role_name}.
-    Include exactly three sections:
+    Generate a clear, structured job profile for a {job_level} {role_name}.
+    Include:
     1️⃣ Job Requirements
     2️⃣ Job Description
     3️⃣ Key Competencies
-    Return it in plain text (no markdown table, no pipes) with each section separated by headings.
-    Context/Purpose: {role_purpose}
+    Context: {role_purpose}
     """
 
     payload = {
         "model": "openai/gpt-4o-mini",
         "messages": [
-            {"role": "system", "content": "You generate concise structured job profiles for HR use."},
+            {"role": "system", "content": "You generate concise job profiles for HR."},
             {"role": "user", "content": prompt}
         ]
     }
@@ -119,6 +119,7 @@ def generate_job_profile(role_name, job_level, role_purpose):
         return response.json()["choices"][0]["message"]["content"]
     else:
         return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
+
 
 # ==========================================================
 # 🚀 STEP 5: COMBINED BUTTON (SQL + AI)
