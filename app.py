@@ -171,121 +171,136 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
 
 
-
-
 # ==========================================================
-# 🎯 STEP 6 (REVISED): JOB DETAILS FORM (Requirements + Competencies)
+# 🎯 STEP 6: Job Details (AI Generated Dropdown Version)
 # ==========================================================
-# ==========================================================
-# 🎯 STEP 6 (Final Polished): Job Details Form (2 Section)
-# ==========================================================
-import streamlit as st
 import re
 
 st.markdown("---")
-st.subheader("3️⃣ Job Details Form")
+st.subheader("3️⃣ Job Details")
 
-if "ai_job_profile" not in st.session_state:
-    st.info("⚠️ Jalankan dulu 'Generate Job Profile' agar AI dapat mengisi dropdown otomatis.")
-else:
-    ai_text = st.session_state["ai_job_profile"]
+st.caption("All fields below are required. Please add at least one item for each category.")
 
-    # ====== Ekstraksi otomatis poin dari hasil AI ======
-    def extract_bullets(text):
-        bullets = re.findall(r"[-•]\s*(.+)", text)
-        return [b.strip() for b in bullets if len(b.strip()) > 2]
+# --- Generate AI suggestions khusus untuk job details ---
+def generate_job_details(role_name, job_level):
+    try:
+        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+    except Exception:
+        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+        return None
 
-    # Pisahkan bagian Requirements & Competencies dari teks AI
-    req_raw = re.findall(r"(?i)(?:requirement[s]?:|qualification[s]?:)([\s\S]*?)(?:competenc|$)", ai_text)
-    comp_raw = re.findall(r"(?i)(?:competenc[y|ies]:)([\s\S]*)", ai_text)
-    req_list = extract_bullets(req_raw[0]) if req_raw else []
-    comp_list = extract_bullets(comp_raw[0]) if comp_raw else []
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+        "X-Title": "Talent Match Intelligence",
+        "Content-Type": "application/json",
+    }
 
-    # ====== Persingkat setiap poin jadi singkat dan ringkas ======
-    def shorten_point(point):
-        point = re.sub(r"\bexperience\b.*", "", point, flags=re.I)
-        point = re.sub(r"\b(proficiency in|ability to|knowledge of)\b", "", point, flags=re.I)
-        point = re.sub(r"[.,;].*", "", point)
-        point = re.sub(r"\s{2,}", " ", point)
-        return point.strip().capitalize()
+    prompt = f"""
+    You are an HR assistant helping define job details.
+    Generate 2 separate lists in bullet format:
+    1️⃣ Key Responsibilities
+    2️⃣ Key Competencies
+    for a {job_level} {role_name}.
+    Each list should contain 5–7 concise points, short and practical.
+    Return only plain text with clear section headers.
+    """
 
-    req_list = [shorten_point(p) for p in req_list if p]
-    comp_list = [shorten_point(p) for p in comp_list if p]
+    payload = {
+        "model": "openai/gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You are an HR AI generating structured job details."},
+            {"role": "user", "content": prompt}
+        ]
+    }
 
-    # ====== State management ======
-    if "requirements" not in st.session_state:
-        st.session_state.requirements = []
-    if "competencies" not in st.session_state:
-        st.session_state.competencies = []
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, data=json.dumps(payload))
+    if response.status_code == 200:
+        text = response.json()["choices"][0]["message"]["content"]
 
-    # ====== Fungsi Render Section ======
-    def render_section(title, key, ai_suggestions):
-        st.markdown(f"### {title}")
+        # pisahkan dua bagian
+        responsibilities = re.findall(r"(?i)(?:responsibilit(?:y|ies)[:\-\n]+)([\s\S]*?)(?:competenc|$)", text)
+        competencies = re.findall(r"(?i)(?:competenc(?:y|ies)[:\-\n]+)([\s\S]*)", text)
+        
+        def clean_list(raw_text):
+            items = re.findall(r"[-•]\s*(.+)", raw_text)
+            return [i.strip().capitalize() for i in items if i.strip()]
+        
+        return {
+            "responsibilities": clean_list(responsibilities[0]) if responsibilities else [],
+            "competencies": clean_list(competencies[0]) if competencies else []
+        }
+    else:
+        st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
+        return None
 
-        # Kotak border halus
-        with st.container(border=True):
-            # Input dan tombol sejajar
-            cols = st.columns([8, 1])
-            with cols[0]:
-                new_item = st.text_input("Add an item", key=f"input_{key}", label_visibility="collapsed")
-            with cols[1]:
-                add_btn = st.button("➕", key=f"add_{key}")
+# --- Load AI suggestions (only once) ---
+if "job_details_ai" not in st.session_state:
+    with st.spinner("🤖 Generating AI-based job details..."):
+        ai_details = generate_job_details(selected_role, selected_job_level)
+        if ai_details:
+            st.session_state["job_details_ai"] = ai_details
+        else:
+            st.stop()
 
-            # Dropdown dari AI suggestions
-            if ai_suggestions:
-                selected_suggestion = st.selectbox(
-                    "AI Suggestions",
-                    options=[""] + ai_suggestions,
-                    key=f"dropdown_{key}",
-                    label_visibility="collapsed",
-                    help="Pilih dari hasil AI"
-                )
-                if selected_suggestion:
-                    if st.button("Add from AI", key=f"add_ai_{key}"):
-                        if selected_suggestion not in st.session_state[key]:
-                            st.session_state[key].append(selected_suggestion)
+ai_details = st.session_state["job_details_ai"]
 
-            # Tambahkan item manual
-            if add_btn and new_item.strip():
-                st.session_state[key].append(new_item.strip())
-                st.session_state[f"input_{key}"] = ""  # reset input
+# --- Session states for selected items ---
+if "selected_responsibilities" not in st.session_state:
+    st.session_state["selected_responsibilities"] = []
+if "selected_competencies" not in st.session_state:
+    st.session_state["selected_competencies"] = []
 
-            # List item dengan bullet, edit, delete
-            for i, item in enumerate(st.session_state[key]):
-                cols = st.columns([10, 1, 1])
-                with cols[0]:
-                    st.markdown(f"• **{item}**")
-                with cols[1]:
-                    if st.button("✏️", key=f"edit_{key}_{i}"):
-                        st.session_state[f"edit_index_{key}"] = i
-                with cols[2]:
-                    if st.button("❌", key=f"del_{key}_{i}"):
-                        st.session_state[key].pop(i)
-                        st.rerun()
+# --- Fungsi render tiap kategori ---
+def render_detail_section(title, key, ai_options):
+    st.markdown(f"### {title}")
 
-                # Mode edit
-                if st.session_state.get(f"edit_index_{key}") == i:
-                    edited_text = st.text_input("Edit item", value=item, key=f"editbox_{key}_{i}")
-                    if st.button("Save", key=f"save_{key}_{i}"):
-                        st.session_state[key][i] = edited_text
-                        del st.session_state[f"edit_index_{key}"]
-                        st.rerun()
+    # Drop-down + add sejajar
+    cols = st.columns([6, 1])
+    with cols[0]:
+        selected = st.selectbox(f"Select {title.lower()}", options=[""] + ai_options, key=f"select_{key}", label_visibility="collapsed")
+    with cols[1]:
+        if st.button("➕", key=f"add_{key}"):
+            if selected and selected not in st.session_state[key]:
+                st.session_state[key].append(selected)
+                st.rerun()
 
-    # ====== Render dua section utama ======
-    render_section("Requirements", "requirements", req_list)
-    render_section("Competencies", "competencies", comp_list)
+    # Tampilkan hasil yang sudah ditambahkan
+    for i, item in enumerate(st.session_state[key]):
+        cols = st.columns([10, 0.8, 0.8])
+        with cols[0]:
+            st.markdown(f"• {item}")
+        with cols[1]:
+            if st.button("✏️", key=f"edit_{key}_{i}"):
+                st.session_state[f"edit_index_{key}"] = i
+        with cols[2]:
+            if st.button("❌", key=f"del_{key}_{i}"):
+                st.session_state[key].pop(i)
+                st.rerun()
 
-    # ====== Tombol Simpan ======
-    if st.button("💾 Save Job Details"):
-        try:
-            data_insert = {
-                "role_name": selected_role,
-                "job_level": selected_job_level,
-                "requirements": st.session_state["requirements"],
-                "competencies": st.session_state["competencies"],
-                "created_at": datetime.now().isoformat()
-            }
-            supabase.table("job_details").insert(data_insert).execute()
-            st.success("✅ Job Details berhasil disimpan ke Supabase!")
-        except Exception as e:
-            st.error(f"Gagal menyimpan ke Supabase: {e}")
+        # Mode edit
+        if st.session_state.get(f"edit_index_{key}") == i:
+            edited_text = st.text_input("Edit", value=item, key=f"editbox_{key}_{i}")
+            if st.button("Save", key=f"save_{key}_{i}"):
+                st.session_state[key][i] = edited_text
+                del st.session_state[f"edit_index_{key}"]
+                st.rerun()
+
+# --- Render dua bagian ---
+render_detail_section("Key Responsibilities", "selected_responsibilities", ai_details["responsibilities"])
+render_detail_section("Key Competencies", "selected_competencies", ai_details["competencies"])
+
+# --- Simpan ke Supabase ---
+if st.button("💾 Save Job Details"):
+    try:
+        data_insert = {
+            "role_name": selected_role,
+            "job_level": selected_job_level,
+            "responsibilities": st.session_state["selected_responsibilities"],
+            "competencies": st.session_state["selected_competencies"],
+            "created_at": datetime.now().isoformat()
+        }
+        supabase.table("job_details").insert(data_insert).execute()
+        st.success("✅ Job Details berhasil disimpan ke Supabase!")
+    except Exception as e:
+        st.error(f"Gagal menyimpan ke Supabase: {e}")
