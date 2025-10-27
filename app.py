@@ -12,13 +12,20 @@ from supabase import create_client, Client
 import pandas as pd
 import requests
 import json
+from io import StringIO
 
-# --- Koneksi ke Supabase ---
+# ==========================================================
+# 🔗 KONEKSI SUPABASE
+# ==========================================================
 url = "https://cckdfjxowgowgxufnhnj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
 supabase: Client = create_client(url, key)
 
-# --- Konfigurasi halaman ---
+
+
+# ==========================================================
+# ⚙️ KONFIGURASI HALAMAN
+# ==========================================================
 st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
 st.title("🎯 Talent Match Intelligence Dashboard")
 
@@ -39,30 +46,24 @@ if not benchmark_data:
 df_benchmark = pd.DataFrame(benchmark_data)
 
 # ==========================================================
-# 🧭 STEP 2: Input dari user (parameter runtime)
+# 🧭 STEP 2: Input Role Information
 # ==========================================================
-
 st.subheader("1️⃣ Role Information")
 
-# --- Pilih Role Name ---
 role_names = sorted(df_benchmark["role_name"].dropna().unique())
 selected_role = st.selectbox("Role Name", role_names)
 
-# --- Filter karyawan berdasarkan role yang dipilih ---
 filtered_df = df_benchmark[df_benchmark["role_name"] == selected_role]
-
-# --- Job Level otomatis mengikuti role yang dipilih ---
 job_levels = filtered_df["job_level"].dropna().unique()
 selected_job_level = st.selectbox("Job Level", job_levels)
 
-# --- Role Purpose (manual input) ---
 role_purpose = st.text_area(
     "Role Purpose",
     placeholder="Contoh: Ensure production targets are met with optimal quality and cost efficiency"
 )
 
 # ==========================================================
-# 👥 STEP 3: Pilih Employee Benchmark
+# 👥 STEP 3: Employee Benchmark
 # ==========================================================
 st.subheader("2️⃣ Employee Benchmarking")
 
@@ -76,46 +77,48 @@ selected_employees = st.multiselect(
     max_selections=3
 )
 
-# Ambil employee_id-nya saja
 selected_ids = [emp.split(" - ")[0] for emp in selected_employees]
 
 # ==========================================================
-# 🧠 STEP 4: AI Job Profile Generator (OpenRouter)
+# 🧠 STEP 4: AI Job Profile Generator
 # ==========================================================
 def generate_job_profile(role_name, job_level, role_purpose):
-    """
-    Generate AI-based job profile (requirements, description, competencies)
-    using OpenRouter API.
-    """
     headers = {
-        "Authorization": f"Bearer {st.secrets['OPENROUTER_API_KEY']}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
     }
 
     prompt = f"""
     You are an HR Talent Intelligence Assistant.
     Generate a concise and structured job profile for a {job_level} {role_name}.
-    Include 3 sections:
+    Include exactly 3 rows in Markdown table format:
+    Columns: [Column, Desc]
+    Sections:
     1. Job Requirements
     2. Job Description
     3. Key Competencies
-    Format in a Markdown table with columns [Column, Desc].
-    Context/Purpose: {role_purpose}
+    Each section should have bullet-style concise text in the "Desc" column.
+    Context: {role_purpose}
     """
 
     payload = {
         "model": "openai/gpt-4o-mini",
         "messages": [
-            {"role": "system", "content": "You generate concise structured job profiles for HR use."},
+            {"role": "system", "content": "You generate structured HR job profiles in markdown table format."},
             {"role": "user", "content": prompt}
         ]
     }
 
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, data=json.dumps(payload))
-    if response.status_code == 200:
-        return response.json()["choices"][0]["message"]["content"]
-    else:
-        return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
+    try:
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                                 headers=headers,
+                                 data=json.dumps(payload))
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
+    except Exception as e:
+        return f"⚠️ Terjadi error saat menghubungi OpenRouter: {e}"
 
 # ==========================================================
 # 🚀 STEP 5: COMBINED BUTTON (SQL + AI)
@@ -149,53 +152,28 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 # --- 2️⃣ Generate AI Job Profile ---
                 ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
 
-                # --- Tampilkan hasil AI Job Profile dengan format rapi ---
-                if ai_profile and not ai_profile.startswith("⚠️"):
-                    st.subheader("🧠 AI-Generated Job Profile")
+                st.subheader("🧠 AI-Generated Job Profile")
 
-                    text = ai_profile.strip()
+                # Coba ubah hasil markdown AI ke DataFrame
+                try:
+                    markdown_table = "\n".join([line for line in ai_profile.splitlines() if "|" in line])
+                    if markdown_table:
+                        # Hilangkan baris separator markdown (---)
+                        markdown_table = "\n".join([l for l in markdown_table.split("\n") if "---" not in l])
 
-                    sections = {
-                        "Job Requirements": "",
-                        "Job Description": "",
-                        "Key Competencies": "",
-                    }
+                        # Parse markdown menjadi DataFrame
+                        df_table = pd.read_csv(StringIO(markdown_table), sep="|", engine="python")
+                        df_table = df_table.dropna(axis=1, how="all")  # drop kolom kosong
+                        df_table = df_table.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+                        df_table = df_table[1:-1]  # drop baris kosong
 
-                    current_section = None
-                    for line in text.splitlines():
-                        line = line.strip()
-                        if "requirement" in line.lower():
-                            current_section = "Job Requirements"
-                            continue
-                        elif "description" in line.lower():
-                            current_section = "Job Description"
-                            continue
-                        elif "competenc" in line.lower():
-                            current_section = "Key Competencies"
-                            continue
-
-                        if current_section and line:
-                            sections[current_section] += line + " "
-
-                    # --- Format tampilan HTML ---
-                    st.markdown("""
-                    <div style="padding:1rem; border-radius:10px; background-color:#f9f9f9;">
-                        <h4 style="margin-bottom:0.5rem;">📋 <b>Job Requirements</b></h4>
-                        <p style="margin-top:0;">{}</p>
-
-                        <h4 style="margin-bottom:0.5rem;">🧾 <b>Job Description</b></h4>
-                        <p style="margin-top:0;">{}</p>
-
-                        <h4 style="margin-bottom:0.5rem;">💡 <b>Key Competencies</b></h4>
-                        <p style="margin-top:0;">{}</p>
-                    </div>
-                    """.format(
-                        sections["Job Requirements"].replace("\n", "<br>"),
-                        sections["Job Description"].replace("\n", "<br>"),
-                        sections["Key Competencies"].replace("\n", "<br>"),
-                    ), unsafe_allow_html=True)
-                else:
-                    st.warning(ai_profile)
+                        # Tampilkan hasil seperti di contoh referensi
+                        st.dataframe(df_table, use_container_width=True)
+                    else:
+                        st.markdown(ai_profile)
+                except Exception:
+                    st.markdown(ai_profile)
 
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
+
