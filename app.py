@@ -35,8 +35,7 @@ if st.button(" Jalankan Analisis"):
       SELECT UNNEST(ARRAY[{','.join([f"'{e}'" for e in emp_ids])}]) AS employee_id
     ),
 
-    #-- BASELINE DINAMIS
-    #-- HITUNG MEDIAN UNTUK SKOR NUMERIC
+
     baseline_dynamic AS (
       SELECT
         e.tv_name,
@@ -48,7 +47,7 @@ if st.button(" Jalankan Analisis"):
       GROUP BY e.tv_name
     ),
 
-    #-- BASELINE WEIGHT
+
     baseline_weight AS (
       SELECT
         tv_name,
@@ -60,7 +59,7 @@ if st.button(" Jalankan Analisis"):
       FROM baseline_weight
     ),
 
-    #-- DATA EMPLOYEE
+ 
     emp_clean AS (
       SELECT
         employee_id,
@@ -76,7 +75,7 @@ if st.button(" Jalankan Analisis"):
       FROM emp
     ),
 
-    #-- JOIN SEMUA
+   
     joined_data AS (
       SELECT
         e.employee_id,
@@ -96,7 +95,7 @@ if st.button(" Jalankan Analisis"):
       LEFT JOIN baseline_weight b ON e.tv_name = b.tv_name
     ),
 
-    #-- TV MATCH RATE (gabungan logic numeric & categorical)
+  
     tv_match AS (
       SELECT
         employee_id,
@@ -120,7 +119,7 @@ if st.button(" Jalankan Analisis"):
       FROM joined_data
     ),
 
-    #-- TGV MATCH RATE
+    
     tgv_match AS (
       SELECT
         employee_id,
@@ -134,7 +133,7 @@ if st.button(" Jalankan Analisis"):
       GROUP BY employee_id, directorate, role, grade, tgv_name
     ),
 
-    -- FINAL MATCH RATE
+   
     final_match AS (
       SELECT
         employee_id,
@@ -143,7 +142,7 @@ if st.button(" Jalankan Analisis"):
       GROUP BY employee_id
     )
 
-    #-- OUTPUT AKHIR
+    
     SELECT
       t.employee_id,
       t.directorate,
