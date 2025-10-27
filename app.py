@@ -21,7 +21,10 @@ st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
 st.title("🎯 Talent Match Intelligence Dashboard")
 
 # --- Input benchmark employee IDs ---
-benchmark_input = st.text_input("Masukkan Employee ID Benchmark (pisahkan dengan koma)", "EMP100958, EMP101451, EMP100362")
+benchmark_input = st.text_input(
+    "Masukkan Employee ID Benchmark (pisahkan dengan koma)", 
+    "EMP100958, EMP101451, EMP100362"
+)
 
 if st.button(" Jalankan Analisis"):
     emp_ids = [x.strip() for x in benchmark_input.split(",") if x.strip()]
@@ -31,144 +34,135 @@ if st.button(" Jalankan Analisis"):
     WITH selected_talent_ids AS (
       SELECT UNNEST(ARRAY[{','.join([f"'{e}'" for e in emp_ids])}]) AS employee_id
     ),
-    ...
-    -- (tempelkan seluruh query kamu di sini persis seperti versi BigQuery)
-    ...
+
+    #-- BASELINE DINAMIS
+    #-- HITUNG MEDIAN UNTUK SKOR NUMERIC
+    baseline_dynamic AS (
+      SELECT
+        e.tv_name,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY e.tv_score::FLOAT)
+          AS baseline_score_num
+      FROM emp e
+      JOIN selected_talent_ids s ON e.employee_id = s.employee_id
+      WHERE e.tv_score ~ '^[0-9.]+$'  -- ambil hanya yang numerik
+      GROUP BY e.tv_name
+    ),
+
+    #-- BASELINE WEIGHT
+    baseline_weight AS (
+      SELECT
+        tv_name,
+        tgv_name,
+        tgv_weight::FLOAT AS tgv_weight,
+        tv_weight::FLOAT AS tv_weight,
+        baseline_score,
+        domain
+      FROM baseline_weight
+    ),
+
+    #-- DATA EMPLOYEE
+    emp_clean AS (
+      SELECT
+        employee_id,
+        directorate,
+        position AS role,
+        job_level AS grade,
+        tv_name,
+        CASE
+          WHEN tv_score ~ '^[0-9.]+$' THEN tv_score::FLOAT
+          ELSE NULL
+        END AS user_score_num,
+        tv_score AS user_score_raw
+      FROM emp
+    ),
+
+    #-- JOIN SEMUA
+    joined_data AS (
+      SELECT
+        e.employee_id,
+        e.directorate,
+        e.role,
+        e.grade,
+        e.tv_name,
+        b.tgv_name,
+        d.baseline_score_num,
+        e.user_score_num,
+        e.user_score_raw,
+        b.tgv_weight,
+        b.tv_weight,
+        b.baseline_score AS baseline_score_raw
+      FROM emp_clean e
+      LEFT JOIN baseline_dynamic d ON e.tv_name = d.tv_name
+      LEFT JOIN baseline_weight b ON e.tv_name = b.tv_name
+    ),
+
+    #-- TV MATCH RATE (gabungan logic numeric & categorical)
+    tv_match AS (
+      SELECT
+        employee_id,
+        directorate,
+        role,
+        grade,
+        tgv_name,
+        tv_name,
+        baseline_score_num,
+        user_score_num,
+        baseline_score_raw,
+        user_score_raw,
+        CASE
+          WHEN baseline_score_num IS NOT NULL AND user_score_num IS NOT NULL THEN
+            LEAST((user_score_num / NULLIF(baseline_score_num, 0)) * 100, 100)
+          WHEN baseline_score_raw IS NOT NULL AND user_score_raw = baseline_score_raw THEN 100
+          ELSE 0
+        END AS tv_match_rate,
+        tgv_weight,
+        tv_weight
+      FROM joined_data
+    ),
+
+    #-- TGV MATCH RATE
+    tgv_match AS (
+      SELECT
+        employee_id,
+        directorate,
+        role,
+        grade,
+        tgv_name,
+        SUM(tv_match_rate * tv_weight) / NULLIF(SUM(tv_weight), 0) AS tgv_match_rate,
+        MAX(tgv_weight) AS tgv_weight
+      FROM tv_match
+      GROUP BY employee_id, directorate, role, grade, tgv_name
+    ),
+
+    -- FINAL MATCH RATE
+    final_match AS (
+      SELECT
+        employee_id,
+        SUM(tgv_match_rate * tgv_weight) / NULLIF(SUM(tgv_weight), 0) AS final_match_rate
+      FROM tgv_match
+      GROUP BY employee_id
+    )
+
+    #-- OUTPUT AKHIR
+    SELECT
+      t.employee_id,
+      t.directorate,
+      t.role,
+      t.grade,
+      t.tgv_name,
+      t.tv_name,
+      COALESCE(ROUND(t.baseline_score_num::NUMERIC, 2), NULL) AS baseline_score,
+      COALESCE(ROUND(t.user_score_num::NUMERIC, 2), NULL) AS user_score,
+      ROUND(t.tv_match_rate::NUMERIC, 2) AS tv_match_rate,
+      ROUND(g.tgv_match_rate::NUMERIC, 2) AS tgv_match_rate,
+      ROUND(f.final_match_rate::NUMERIC, 2) AS final_match_rate
+    FROM tv_match t
+    LEFT JOIN tgv_match g
+      ON t.employee_id = g.employee_id AND t.tgv_name = g.tgv_name
+    LEFT JOIN final_match f
+      ON t.employee_id = f.employee_id
     ORDER BY f.final_match_rate DESC, t.employee_id, t.tgv_name, t.tv_name;
     """
-#-- PARAMETER INPUT
-WITH selected_talent_ids AS (
-  SELECT UNNEST(ARRAY['EMP100958', 'EMP101451', 'EMP100362']) AS employee_id
-),
-
-#-- BASELINE DINAMIS
-#-- HITUNG MEDIAN UNTUK SKOR NUMERIC
-baseline_dynamic AS (
-  SELECT
-    e.tv_name,
-    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY e.tv_score::FLOAT)
-      AS baseline_score_num
-  FROM emp e
-  JOIN selected_talent_ids s ON e.employee_id = s.employee_id
-  WHERE e.tv_score ~ '^[0-9.]+$'  -- ambil hanya yang numerik
-  GROUP BY e.tv_name
-),
-
-#-- BASELINE WEIGHT
-baseline_weight AS (
-  SELECT
-    tv_name,
-    tgv_name,
-    tgv_weight::FLOAT AS tgv_weight,
-    tv_weight::FLOAT AS tv_weight,
-    baseline_score,
-    domain
-  FROM baseline_weight
-),
-
-#-- DATA EMPLOYEE
-emp_clean AS (
-  SELECT
-    employee_id,
-    directorate,
-    position AS role,
-    job_level AS grade,
-    tv_name,
-    CASE
-      WHEN tv_score ~ '^[0-9.]+$' THEN tv_score::FLOAT
-      ELSE NULL
-    END AS user_score_num,
-    tv_score AS user_score_raw
-  FROM emp
-),
-
-#-- JOIN SEMUA
-joined_data AS (
-  SELECT
-    e.employee_id,
-    e.directorate,
-    e.role,
-    e.grade,
-    e.tv_name,
-    b.tgv_name,
-    d.baseline_score_num,
-    e.user_score_num,
-    e.user_score_raw,
-    b.tgv_weight,
-    b.tv_weight,
-    b.baseline_score AS baseline_score_raw
-  FROM emp_clean e
-  LEFT JOIN baseline_dynamic d ON e.tv_name = d.tv_name
-  LEFT JOIN baseline_weight b ON e.tv_name = b.tv_name
-),
-
-#-- TV MATCH RATE (gabungan logic numeric & categorical)
-tv_match AS (
-  SELECT
-    employee_id,
-    directorate,
-    role,
-    grade,
-    tgv_name,
-    tv_name,
-    baseline_score_num,
-    user_score_num,
-    baseline_score_raw,
-    user_score_raw,
-    CASE
-      WHEN baseline_score_num IS NOT NULL AND user_score_num IS NOT NULL THEN
-        LEAST((user_score_num / NULLIF(baseline_score_num, 0)) * 100, 100)
-      WHEN baseline_score_raw IS NOT NULL AND user_score_raw = baseline_score_raw THEN 100
-      ELSE 0
-    END AS tv_match_rate,
-    tgv_weight,
-    tv_weight
-  FROM joined_data
-),
-
-#-- TGV MATCH RATE
-tgv_match AS (
-  SELECT
-    employee_id,
-    directorate,
-    role,
-    grade,
-    tgv_name,
-    SUM(tv_match_rate * tv_weight) / NULLIF(SUM(tv_weight), 0) AS tgv_match_rate,
-    MAX(tgv_weight) AS tgv_weight
-  FROM tv_match
-  GROUP BY employee_id, directorate, role, grade, tgv_name
-),
-
-#-- FINAL MATCH RATE
-final_match AS (
-  SELECT
-    employee_id,
-    SUM(tgv_match_rate * tgv_weight) / NULLIF(SUM(tgv_weight), 0) AS final_match_rate
-  FROM tgv_match
-  GROUP BY employee_id
-)
-
-#-- OUTPUT AKHIR
-SELECT
-  t.employee_id,
-  t.directorate,
-  t.role,
-  t.grade,
-  t.tgv_name,
-  t.tv_name,
-  COALESCE(ROUND(t.baseline_score_num::NUMERIC, 2), NULL) AS baseline_score,
-  COALESCE(ROUND(t.user_score_num::NUMERIC, 2), NULL) AS user_score,
-  ROUND(t.tv_match_rate::NUMERIC, 2) AS tv_match_rate,
-  ROUND(g.tgv_match_rate::NUMERIC, 2) AS tgv_match_rate,
-  ROUND(f.final_match_rate::NUMERIC, 2) AS final_match_rate
-FROM tv_match t
-LEFT JOIN tgv_match g
-  ON t.employee_id = g.employee_id AND t.tgv_name = g.tgv_name
-LEFT JOIN final_match f
-  ON t.employee_id = f.employee_id
-ORDER BY f.final_match_rate DESC, t.employee_id, t.tgv_name, t.tv_name;
-
 
     # --- Jalankan query ---
     data = supabase.rpc("execute_sql", {"query": sql_query}).execute()
@@ -184,3 +178,4 @@ ORDER BY f.final_match_rate DESC, t.employee_id, t.tgv_name, t.tv_name;
         st.bar_chart(final_df.set_index('employee_id'))
     else:
         st.warning("Tidak ada hasil ditemukan.")
+
