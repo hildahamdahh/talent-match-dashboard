@@ -23,7 +23,7 @@ st.title("🎯 Talent Match Intelligence Dashboard")
 # --- Input benchmark employee IDs ---
 benchmark_input = st.text_input("Masukkan Employee ID Benchmark (pisahkan dengan koma)", "EMP100958, EMP101451, EMP100362")
 
-if st.button("🔍 Jalankan Analisis"):
+if st.button(" Jalankan Analisis"):
     emp_ids = [x.strip() for x in benchmark_input.split(",") if x.strip()]
 
     # --- Ganti placeholder employee_id array di query ---
@@ -36,12 +36,12 @@ if st.button("🔍 Jalankan Analisis"):
     ...
     ORDER BY f.final_match_rate DESC, t.employee_id, t.tgv_name, t.tv_name;
     """
-    -- 🧩 1️⃣ PARAMETER INPUT
+    --  1️ PARAMETER INPUT
 WITH selected_talent_ids AS (
   SELECT UNNEST(ARRAY['EMP100958', 'EMP101451', 'EMP100362']) AS employee_id
 ),
 
--- 🧩 2️⃣ BASELINE DINAMIS
+--  2️ BASELINE DINAMIS
 -- Hitung median hanya untuk skor numeric
 baseline_dynamic AS (
   SELECT
@@ -54,7 +54,7 @@ baseline_dynamic AS (
   GROUP BY e.tv_name
 ),
 
--- 🧩 3️⃣ BASELINE WEIGHT
+--  3️ BASELINE WEIGHT
 baseline_weight AS (
   SELECT
     tv_name,
@@ -66,7 +66,7 @@ baseline_weight AS (
   FROM baseline_weight
 ),
 
--- 🧩 4️⃣ DATA EMPLOYEE
+--  4️ DATA EMPLOYEE
 emp_clean AS (
   SELECT
     employee_id,
@@ -82,7 +82,7 @@ emp_clean AS (
   FROM emp
 ),
 
--- 🧩 5️⃣ JOIN SEMUA
+--  5️ JOIN SEMUA
 joined_data AS (
   SELECT
     e.employee_id,
@@ -102,7 +102,7 @@ joined_data AS (
   LEFT JOIN baseline_weight b ON e.tv_name = b.tv_name
 ),
 
--- 🧩 6️⃣ TV MATCH RATE (gabungan logic numeric & categorical)
+--  6️ TV MATCH RATE (gabungan logic numeric & categorical)
 tv_match AS (
   SELECT
     employee_id,
@@ -126,7 +126,7 @@ tv_match AS (
   FROM joined_data
 ),
 
--- 🧩 7️⃣ TGV MATCH RATE
+-- � 7️ TGV MATCH RATE
 tgv_match AS (
   SELECT
     employee_id,
@@ -140,7 +140,7 @@ tgv_match AS (
   GROUP BY employee_id, directorate, role, grade, tgv_name
 ),
 
--- 🧩 8️⃣ FINAL MATCH RATE
+--  8️ FINAL MATCH RATE
 final_match AS (
   SELECT
     employee_id,
@@ -149,7 +149,7 @@ final_match AS (
   GROUP BY employee_id
 )
 
--- 🧩 9️⃣ OUTPUT AKHIR
+-- � 9️ OUTPUT AKHIR
 SELECT
   t.employee_id,
   t.directorate,
