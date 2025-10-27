@@ -46,8 +46,11 @@ st.subheader("1️⃣ Role Information")
 role_names = sorted(df_benchmark["role_name"].dropna().unique())
 selected_role = st.selectbox("Role Name", role_names)
 
+# --- Filter karyawan berdasarkan role yang dipilih ---
+filtered_df = df_benchmark[df_benchmark["role_name"] == selected_role]
+
 # --- Job Level otomatis mengikuti role yang dipilih ---
-job_levels = df_benchmark.loc[df_benchmark["role_name"] == selected_role, "job_level"].unique()
+job_levels = filtered_df["job_level"].dropna().unique()
 selected_job_level = st.selectbox("Job Level", job_levels)
 
 # --- Role Purpose (manual input) ---
@@ -63,7 +66,7 @@ st.subheader("2️⃣ Employee Benchmarking")
 
 employee_options = [
     f"{row['employee_id']} - {row['fullname']} ({row['role_name']})"
-    for _, row in df_benchmark.iterrows()
+    for _, row in filtered_df.iterrows()
 ]
 selected_employees = st.multiselect(
     "Pilih maksimal 3 karyawan sebagai benchmark:",
