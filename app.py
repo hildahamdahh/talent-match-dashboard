@@ -311,9 +311,82 @@ def render_detail_section(title, key, ai_options):
 render_detail_section("Key Responsibilities", "selected_responsibilities", ai_details["responsibilities"])
 render_detail_section("Key Competencies", "selected_competencies", ai_details["competencies"])
 
-# --- Simpan ke Supabase ---
-if st.button("💾 Save Job Details"):
+# ==========================================================
+# 🧠 STEP 7: Mapping Job Details → Competency Domains (tgv_name)
+# ==========================================================
+def map_job_details_to_tgv(responsibilities, competencies):
     try:
+        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+    except Exception:
+        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+        "X-Title": "Talent Match Intelligence",
+        "Content-Type": "application/json",
+    }
+
+    prompt = f"""
+    You are an HR data-mapping assistant.
+    Map the following job details into internal competency *domains* (`tgv_name`)
+    used in the Talent Match Intelligence system.
+
+    Responsibilities:
+    {responsibilities}
+
+    Competencies:
+    {competencies}
+
+    Choose only from this list of valid TGV names:
+    - Adaptability & Stress Tolerance
+    - Cognitive Complexity & Problem-Solving
+    - Conscientiousness & Reliability
+    - Creativity & Innovation Orientation
+    - Cultural & Values Urgency
+    - Leadership & Influence
+    - Motivation & Drive
+    - Social Orientation & Collaboration
+
+    Return only JSON with one array:
+    {{
+      "tgv_name": ["Leadership & Influence", "Motivation & Drive", ...]
+    }}
+    """
+
+    payload = {
+        "model": "openai/gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You map HR job details to internal competency domains."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, data=json.dumps(payload))
+    if response.status_code == 200:
+        try:
+            content = response.json()["choices"][0]["message"]["content"]
+            clean_json = re.sub(r"```json|```", "", content).strip()
+            return json.loads(clean_json)
+        except Exception as e:
+            st.error(f"⚠️ Gagal parsing hasil mapping: {e}")
+            st.text(content)
+            return None
+    else:
+        st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
+        return None
+
+
+# ==========================================================
+# 🚀 STEP 8: Save & Run Talent Match with Custom TGV Filter
+# ==========================================================
+st.markdown("---")
+st.subheader("4️⃣ Run Talent Match Based on Job Details")
+
+if st.button("💾 Save & Run Talent Match"):
+    try:
+        # --- Simpan Job Details ke Supabase ---
         data_insert = {
             "role_name": selected_role,
             "job_level": selected_job_level,
@@ -323,5 +396,43 @@ if st.button("💾 Save Job Details"):
         }
         supabase.table("job_details").insert(data_insert).execute()
         st.success("✅ Job Details berhasil disimpan ke Supabase!")
+
+        # --- AI Mapping Job Details → Competency Domains (TGV) ---
+        with st.spinner("🤖 Mapping Job Details ke Kompetensi Internal (TGV)..."):
+            mapping_result = map_job_details_to_tgv(
+                st.session_state["selected_responsibilities"],
+                st.session_state["selected_competencies"]
+            )
+
+        if mapping_result and "tgv_name" in mapping_result:
+            custom_tgv_list = mapping_result["tgv_name"]
+            st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
+
+            # --- Jalankan SQL Talent Scoring Function ---
+            with st.spinner("📊 Menghitung Final Match Rate berdasarkan domain relevan..."):
+                result = supabase.rpc(
+                    "talent_match_scoring",
+                    {
+                        "benchmark_ids": selected_ids,
+                        "custom_tgv_list": custom_tgv_list
+                    }
+                ).execute()
+
+                data = result.data
+                if data:
+                    df_result = pd.DataFrame(data)
+                    rank_df = (
+                        df_result[["employee_id", "final_match_rate"]]
+                        .drop_duplicates()
+                        .sort_values(by="final_match_rate", ascending=False)
+                    )
+                    st.subheader("🏁 Final Match Rate (Filtered by Role Domains)")
+                    st.dataframe(rank_df)
+                    st.bar_chart(rank_df.set_index("employee_id"))
+                else:
+                    st.warning("⚠️ Tidak ada hasil ditemukan setelah filtering.")
+        else:
+            st.warning("⚠️ AI tidak menghasilkan mapping domain yang valid.")
+
     except Exception as e:
-        st.error(f"Gagal menyimpan ke Supabase: {e}")
+        st.error(f"Gagal menyimpan atau menjalankan analisis: {e}")
