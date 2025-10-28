@@ -390,16 +390,22 @@ if st.button("💾 Save & Run Talent Match"):
 
                     # --- Format Output Lengkap ---
                     rank_df = (
-                        df_result[
-                            ["fullname", "final_match_rate", "role", "division", "department", "directorate", "job_level", "tgv_name"]
-                        ]
+                        df_result[["employee_id", "role", "directorate", "grade", "final_match_rate", "tgv_name"]]
+                        .drop_duplicates()
                         .sort_values(by="final_match_rate", ascending=False)
-                        .reset_index(drop=True)
                     )
+                    
+                    rank_df.rename(columns={
+                        "employee_id": "Name",
+                        "grade": "Job_Level",
+                        "tgv_name": "Top TGVs",
+                        "final_match_rate": "Match Rate",
+                    }, inplace=True)
+                    
+                    st.subheader("🏁 Final Match Rate (Filtered by Role Competencies)")
+                    st.dataframe(rank_df)
+                    st.bar_chart(rank_df.set_index("Name")["Match Rate"])
 
-                    st.subheader("🏁 Final Match Rate — All Employees")
-                    st.dataframe(rank_df, use_container_width=True)
-                    st.bar_chart(rank_df.set_index("fullname")["final_match_rate"])
                 else:
                     st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
         else:
