@@ -65,10 +65,15 @@ role_purpose = st.text_area(
 # ==========================================================
 st.subheader("2️⃣ Employee Benchmarking")
 
+# --- Filter hanya karyawan dengan rating 5 sebagai benchmark ---
+if "rating" in filtered_df.columns:
+    filtered_df = filtered_df[filtered_df["rating"].astype(str) == "5"]
+
 employee_options = [
     f"{row['employee_id']} - {row['fullname']} ({row['role_name']})"
     for _, row in filtered_df.iterrows()
 ]
+
 selected_employees = st.multiselect(
     "Pilih maksimal 3 karyawan sebagai benchmark:",
     options=employee_options,
