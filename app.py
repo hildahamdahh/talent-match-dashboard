@@ -149,6 +149,74 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 st.warning(ai_profile)
 
 # ==========================================================
+# 🧠 Generate AI-Based Job Details (Responsibilities & Competencies)
+# ==========================================================
+def generate_job_details(role_name, job_level):
+    """
+    Generate two lists: responsibilities & competencies for a given role and level.
+    Uses OpenRouter GPT-4o-mini.
+    """
+    try:
+        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+    except Exception:
+        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+        "X-Title": "Talent Match Intelligence",
+        "Content-Type": "application/json",
+    }
+
+    prompt = f"""
+    You are an HR assistant helping define job details.
+    Generate 2 concise bullet lists:
+    1) Key Responsibilities (10–12 items)
+    2) Key Competencies (10–12 items, each 1–3 words only)
+    for a {job_level} {role_name}.
+    Keep them short, specific, and business-relevant.
+    Return in JSON format like this:
+    {{
+      "responsibilities": ["item1", "item2", ...],
+      "competencies": ["item1", "item2", ...]
+    }}
+    """
+
+    payload = {
+        "model": "openai/gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You generate short, structured job detail lists for HR systems."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    try:
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=30
+        )
+    except Exception as e:
+        st.error(f"⚠️ Gagal request ke OpenRouter: {e}")
+        return None
+
+    if response.status_code != 200:
+        st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
+        return None
+
+    try:
+        content = response.json()["choices"][0]["message"]["content"]
+        clean_json = re.sub(r"```json|```", "", content).strip()
+        return json.loads(clean_json)
+    except Exception as e:
+        st.error(f"⚠️ Gagal parsing hasil generate job details: {e}")
+        st.text(content)
+        return None
+
+
+# ==========================================================
 # 🎯 STEP 6: AI-Based Job Details (Responsibilities & Competencies)
 # ==========================================================
 st.markdown("---")
