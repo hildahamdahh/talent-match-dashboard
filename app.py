@@ -187,7 +187,7 @@ if st.button("✨ Generate Job Profile & Variable Score"):
             st.json({
                 "benchmark_ids": selected_ids,
                 "custom_tgv_list": None,
-                "custom_tgv_weights": custom_tgv_weights
+                "custom_tgv_weights": json.dumps(custom_tgv_weights) if custom_tgv_weights else None
             })
 
             with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
