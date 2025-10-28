@@ -8,11 +8,12 @@ Original file is located at
 """
 
 # ==========================================================
-# 🎯 TALENT MATCH INTELLIGENCE DASHBOARD (FINAL v3)
+# 🎯 TALENT MATCH INTELLIGENCE DASHBOARD (FINAL v3.1)
 # ==========================================================
-# Versi ini mempertahankan seluruh fitur dari app.py sebelumnya
-# + menambahkan custom TGV weight (slider)
-# + mengganti function ke talent_match_scoring_v3
+# ✅ Fixes:
+# - JSON parameter fix for Supabase RPC (no json.dumps)
+# - Added debug info
+# - Improved "Generate Job Profile" and "Run Match" flow
 # ==========================================================
 
 import streamlit as st
@@ -23,15 +24,16 @@ import json
 import re
 from datetime import datetime
 
-# --- Koneksi ke Supabase ---
+# ==========================================================
+# 🔌 Koneksi ke Supabase
+# ==========================================================
 url = "https://cckdfjxowgowgxufnhnj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
 supabase: Client = create_client(url, key)
 
-# --- Page Setup ---
 st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
-st.title("🎯 Talent Match Intelligence Dashboard (v3)")
-st.caption("Version 3.0 — dynamic benchmark + custom TGV weighting")
+st.title("🎯 Talent Match Intelligence Dashboard (v3.1)")
+st.caption("Version 3.1 — benchmark + custom TGV weight + AI job profile")
 
 # ==========================================================
 # 🧩 STEP 1: Ambil data benchmark dari Supabase
@@ -118,7 +120,7 @@ selected_employees = st.multiselect(
 selected_ids = [emp.split(" - ")[0] for emp in selected_employees]
 
 # ==========================================================
-# 🧠 STEP 4: AI Job Profile Generator (OpenRouter)
+# 🧠 STEP 4: AI Job Profile Generator
 # ==========================================================
 def generate_job_profile(role_name, job_level, role_purpose):
     try:
@@ -152,11 +154,8 @@ def generate_job_profile(role_name, job_level, role_purpose):
         ]
     }
 
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers=headers,
-        data=json.dumps(payload)
-    )
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                             headers=headers, data=json.dumps(payload))
 
     if response.status_code == 200:
         return response.json()["choices"][0]["message"]["content"]
@@ -167,7 +166,7 @@ def generate_job_profile(role_name, job_level, role_purpose):
 # 🚀 STEP 5: Generate Job Profile & Benchmark-Only Variable Score
 # ==========================================================
 st.markdown("---")
-st.subheader("2️⃣ Generate AI-Based Job Profile & Variable Score")
+st.subheader("3️⃣ Generate AI-Based Job Profile & Variable Score")
 
 if st.button("✨ Generate Job Profile & Variable Score"):
     if not selected_ids:
@@ -176,123 +175,108 @@ if st.button("✨ Generate Job Profile & Variable Score"):
         with st.spinner("🤖 Generating AI-based job profile..."):
             ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
 
-            if ai_profile and not ai_profile.startswith("⚠️"):
-                st.subheader("🧠 AI-Generated Job Profile")
+        if ai_profile and not ai_profile.startswith("⚠️"):
+            st.subheader("🧠 AI-Generated Job Profile")
+            clean_text = re.sub(r"<[^>]*>", "", ai_profile)
+            clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
+            st.write(clean_text)
+            st.session_state["ai_job_profile"] = clean_text
+            st.success("✅ AI Job Profile berhasil dihasilkan!")
 
-                clean_text = re.sub(r"<[^>]*>", "", ai_profile)
-                clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
+            st.write("📊 Debug RPC Input:")
+            st.json({
+                "benchmark_ids": selected_ids,
+                "custom_tgv_list": None,
+                "custom_tgv_weights": custom_tgv_weights
+            })
 
-                st.write(clean_text)
-                st.session_state["ai_job_profile"] = clean_text
-                st.success("✅ AI Job Profile berhasil dihasilkan!")
+            with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
+                try:
+                    result = supabase.rpc(
+                        "talent_match_scoring_v3",
+                        {
+                            "benchmark_ids": selected_ids,
+                            "custom_tgv_list": None,
+                            "custom_tgv_weights": custom_tgv_weights  # ✅ FIX
+                        }
+                    ).execute()
 
-                with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
-                    try:
-                        result = supabase.rpc(
-                            "talent_match_scoring_v3",
-                            {
-                                "benchmark_ids": selected_ids,
-                                "custom_tgv_list": None,
-                                "custom_tgv_weights": json.dumps(custom_tgv_weights)
-                            }
-                        ).execute()
-
-                        data = result.data
-                        if data:
-                            df_result = pd.DataFrame(data)
-                            rank_df = (
-                                df_result[["employee_id", "fullname", "role", "directorate", "job_level", "final_match_rate", "tgv_name"]]
-                                .drop_duplicates()
-                                .sort_values(by="final_match_rate", ascending=False)
-                            )
-                            rank_df.rename(columns={
-                                "employee_id": "Employee ID",
-                                "fullname": "Name",
-                                "role": "Role",
-                                "directorate": "Directorate",
-                                "job_level": "Job Level",
-                                "tgv_name": "Top TGV",
-                                "final_match_rate": "Match Rate",
-                            }, inplace=True)
-                            st.subheader("🏁 Final Match Rate (Benchmark Only)")
-                            st.dataframe(rank_df)
-                            st.bar_chart(rank_df.set_index("Name")["Match Rate"])
-                        else:
-                            st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
-                    except Exception as e:
-                        st.error(f"Gagal menjalankan Talent Match Scoring: {e}")
-
-            else:
-                st.warning(ai_profile)
+                    data = result.data
+                    if data:
+                        df_result = pd.DataFrame(data)
+                        rank_df = (
+                            df_result[["employee_id", "fullname", "role", "directorate", "job_level",
+                                       "final_match_rate", "tgv_name"]]
+                            .drop_duplicates()
+                            .sort_values(by="final_match_rate", ascending=False)
+                        )
+                        rank_df.rename(columns={
+                            "employee_id": "Employee ID",
+                            "fullname": "Name",
+                            "role": "Role",
+                            "directorate": "Directorate",
+                            "job_level": "Job Level",
+                            "tgv_name": "Top TGV",
+                            "final_match_rate": "Match Rate",
+                        }, inplace=True)
+                        st.subheader("🏁 Final Match Rate (Benchmark Only)")
+                        st.dataframe(rank_df)
+                        st.bar_chart(rank_df.set_index("Name")["Match Rate"])
+                    else:
+                        st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+                except Exception as e:
+                    st.error(f"Gagal menjalankan Talent Match Scoring: {e}")
+        else:
+            st.warning(ai_profile)
 
 # ==========================================================
-# 🧠 STEP 8: Save & Run Talent Match (SQL + Full Result)
+# 🧠 STEP 6: Run Talent Match dengan Custom TV & Weight
 # ==========================================================
 st.markdown("---")
-st.subheader("4️⃣ Save & Run Talent Match (With Custom TV & Weight)")
+st.subheader("4️⃣ Run Talent Match (With Custom TV & TGV Weight)")
 
 if st.button("💾 Save & Run Talent Match"):
-    try:
-        ai_data = st.session_state.get("job_details_ai", {})
-        if not ai_data:
-            st.warning("⚠️ Generate Job Details terlebih dahulu sebelum menjalankan Talent Match.")
-            st.stop()
+    if not selected_ids:
+        st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
+        st.stop()
 
-        data_insert = {
-            "role_name": selected_role,
-            "job_level": selected_job_level,
-            "responsibilities": st.session_state.get("selected_responsibilities", []),
-            "competencies": st.session_state.get("selected_competencies", []),
-            "created_at": datetime.now().isoformat()
-        }
-        supabase.table("job_details").insert(data_insert).execute()
-        st.success("✅ Job Details berhasil disimpan ke Supabase!")
+    with st.spinner("📊 Menghitung Final Match Rate (Custom TV & TGV Weight)..."):
+        try:
+            result = supabase.rpc(
+                "talent_match_scoring_v3",
+                {
+                    "benchmark_ids": selected_ids,
+                    "custom_tgv_list": list(custom_tgv_weights.keys()),
+                    "custom_tgv_weights": custom_tgv_weights  # ✅ FIXED
+                }
+            ).execute()
 
-        mapping_result = map_job_details_to_tgv(
-            st.session_state.get("selected_responsibilities", []),
-            st.session_state.get("selected_competencies", [])
-        )
+            data = result.data
+            if data:
+                df_result = pd.DataFrame(data)
+                rank_df = (
+                    df_result[["employee_id", "fullname", "role", "directorate", "job_level",
+                               "final_match_rate", "tgv_name"]]
+                    .drop_duplicates()
+                    .sort_values(by="final_match_rate", ascending=False)
+                )
+                rank_df.rename(columns={
+                    "employee_id": "Employee ID",
+                    "fullname": "Name",
+                    "role": "Role",
+                    "directorate": "Directorate",
+                    "job_level": "Job Level",
+                    "tgv_name": "Top TGV",
+                    "final_match_rate": "Match Rate",
+                }, inplace=True)
+                st.subheader("🏁 Final Match Rate (Custom TGV Weight)")
+                st.dataframe(rank_df)
+                st.bar_chart(rank_df.set_index("Name")["Match Rate"])
+            else:
+                st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+        except Exception as e:
+            st.error(f"Gagal menjalankan Talent Match: {e}")
 
-        if mapping_result and "tgv_name" in mapping_result:
-            custom_tgv_list = mapping_result["tgv_name"]
-            st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
-
-            with st.spinner("📊 Menghitung Final Match Rate (Dengan Custom TV & TGV Weight)..."):
-                result = supabase.rpc(
-                    "talent_match_scoring_v3",
-                    {
-                        "benchmark_ids": selected_ids,
-                        "custom_tgv_list": custom_tgv_list,
-                        "custom_tgv_weights": json.dumps(custom_tgv_weights)
-                    }
-                ).execute()
-
-                data = result.data
-                if data:
-                    df_result = pd.DataFrame(data)
-                    rank_df = (
-                        df_result[["employee_id", "fullname", "role", "directorate", "job_level", "final_match_rate", "tgv_name"]]
-                        .drop_duplicates()
-                        .sort_values(by="final_match_rate", ascending=False)
-                    )
-                    rank_df.rename(columns={
-                        "employee_id": "Employee ID",
-                        "fullname": "Name",
-                        "role": "Role",
-                        "directorate": "Directorate",
-                        "job_level": "Job Level",
-                        "tgv_name": "Top TGV",
-                        "final_match_rate": "Match Rate",
-                    }, inplace=True)
-                    st.subheader("🏁 Final Match Rate (Filtered by Role Competencies + Custom TGV Weight)")
-                    st.dataframe(rank_df)
-                    st.bar_chart(rank_df.set_index("Name")["Match Rate"])
-                else:
-                    st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
-        else:
-            st.warning("⚠️ AI tidak menghasilkan mapping domain yang valid.")
-    except Exception as e:
-        st.error(f"Gagal menyimpan atau menjalankan analisis: {e}")
 
 
 
