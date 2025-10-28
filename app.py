@@ -377,7 +377,7 @@ if st.button("💾 Save & Run Talent Match"):
             # --- Jalankan SQL Function Talent Match Scoring ---
             with st.spinner("📊 Menghitung Final Match Rate..."):
                 result = supabase.rpc(
-                    "talent_match_scoring",
+                    "talent_match_scoring_v2",
                     {
                         "benchmark_ids": selected_ids,
                         "custom_tgv_list": custom_tgv_list
@@ -390,17 +390,21 @@ if st.button("💾 Save & Run Talent Match"):
 
                     # --- Format Output Lengkap ---
                     rank_df = (
-                        df_result[["employee_id", "role", "directorate", "grade", "final_match_rate", "tgv_name"]]
+                        df_result[["employee_id", "fullname", "role", "directorate", "job_level", "final_match_rate", "tgv_name"]]
                         .drop_duplicates()
                         .sort_values(by="final_match_rate", ascending=False)
                     )
                     
                     rank_df.rename(columns={
-                        "employee_id": "Name",
-                        "grade": "Job_Level",
-                        "tgv_name": "Top TGVs",
+                        "employee_id": "Employee ID",
+                        "fullname": "Name",
+                        "role": "Role",
+                        "directorate": "Directorate",
+                        "job_level": "Job Level",
+                        "tgv_name": "Top TGV",
                         "final_match_rate": "Match Rate",
                     }, inplace=True)
+
                     
                     st.subheader("🏁 Final Match Rate (Filtered by Role Competencies)")
                     st.dataframe(rank_df)
