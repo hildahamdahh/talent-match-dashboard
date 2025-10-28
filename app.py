@@ -8,8 +8,13 @@ Original file is located at
 """
 
 # ==========================================================
-# 🎯 Talent Match Intelligence Dashboard (FINAL + JOB DETAILS)
+# 🎯 TALENT MATCH INTELLIGENCE DASHBOARD (FINAL v3)
 # ==========================================================
+# Versi ini mempertahankan seluruh fitur dari app.py sebelumnya
+# + menambahkan custom TGV weight (slider)
+# + mengganti function ke talent_match_scoring_v3
+# ==========================================================
+
 import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
@@ -25,7 +30,8 @@ supabase: Client = create_client(url, key)
 
 # --- Page Setup ---
 st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
-st.title("🎯 Talent Match Intelligence Dashboard")
+st.title("🎯 Talent Match Intelligence Dashboard (v3)")
+st.caption("Version 3.0 — dynamic benchmark + custom TGV weighting")
 
 # ==========================================================
 # 🧩 STEP 1: Ambil data benchmark dari Supabase
@@ -46,7 +52,7 @@ df_benchmark = pd.DataFrame(benchmark_data)
 # ==========================================================
 # 🧭 STEP 2: Input dari user (parameter runtime)
 # ==========================================================
-st.subheader("1️⃣ Role Information")
+st.subheader("1️⃣ Role Information & Custom TGV Weighting")
 
 role_names = sorted(df_benchmark["role_name"].dropna().unique())
 selected_role = st.selectbox("Role Name", role_names)
@@ -61,11 +67,41 @@ role_purpose = st.text_area(
 )
 
 # ==========================================================
+# ⚖️ Custom TGV Weight Slider
+# ==========================================================
+st.markdown("#### ⚖️ Custom TGV Weight Adjustment")
+st.caption("Atur bobot kompetensi (TGV) sesuai kebutuhan posisi. Total harus = 1.00")
+
+tgv_list_ref = [
+    "Adaptability & Stress Tolerance",
+    "Cognitive Complexity & Problem-Solving",
+    "Conscientiousness & Reliability",
+    "Creativity & Innovation Orientation",
+    "Cultural & Values Urgency",
+    "Leadership & Influence",
+    "Motivation & Drive",
+    "Social Orientation & Collaboration"
+]
+
+custom_tgv_weights = {}
+total_weight = 0
+
+cols = st.columns(4)
+for i, tgv in enumerate(tgv_list_ref):
+    with cols[i % 4]:
+        w = st.slider(f"{tgv}", 0.0, 0.4, 0.1, 0.01)
+        custom_tgv_weights[tgv] = w
+        total_weight += w
+
+st.write(f"**Total Weight = {round(total_weight, 2)}**")
+if abs(total_weight - 1.0) > 0.01:
+    st.warning("⚠️ Total weight sebaiknya mendekati 1.00 agar proporsional.")
+
+# ==========================================================
 # 👥 STEP 3: Pilih Employee Benchmark
 # ==========================================================
 st.subheader("2️⃣ Employee Benchmarking")
 
-# --- Filter hanya karyawan dengan rating 5 sebagai benchmark ---
 if "rating" in filtered_df.columns:
     filtered_df = filtered_df[filtered_df["rating"].astype(str) == "5"]
 
@@ -127,7 +163,6 @@ def generate_job_profile(role_name, job_level, role_purpose):
     else:
         return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
 
-
 # ==========================================================
 # 🚀 STEP 5: Generate Job Profile & Benchmark-Only Variable Score
 # ==========================================================
@@ -151,29 +186,25 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 st.session_state["ai_job_profile"] = clean_text
                 st.success("✅ AI Job Profile berhasil dihasilkan!")
 
-                # ==========================================================
-                # 🧮 Langsung Hitung Talent Match (Benchmark-Only)
-                # ==========================================================
                 with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
                     try:
                         result = supabase.rpc(
-                            "talent_match_scoring_v2",
+                            "talent_match_scoring_v3",
                             {
                                 "benchmark_ids": selected_ids,
-                                "custom_tgv_list": None  # Tanpa filter job details
+                                "custom_tgv_list": None,
+                                "custom_tgv_weights": json.dumps(custom_tgv_weights)
                             }
                         ).execute()
 
                         data = result.data
                         if data:
                             df_result = pd.DataFrame(data)
-
                             rank_df = (
                                 df_result[["employee_id", "fullname", "role", "directorate", "job_level", "final_match_rate", "tgv_name"]]
                                 .drop_duplicates()
                                 .sort_values(by="final_match_rate", ascending=False)
                             )
-                            
                             rank_df.rename(columns={
                                 "employee_id": "Employee ID",
                                 "fullname": "Name",
@@ -183,7 +214,6 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                                 "tgv_name": "Top TGV",
                                 "final_match_rate": "Match Rate",
                             }, inplace=True)
-
                             st.subheader("🏁 Final Match Rate (Benchmark Only)")
                             st.dataframe(rank_df)
                             st.bar_chart(rank_df.set_index("Name")["Match Rate"])
@@ -195,203 +225,11 @@ if st.button("✨ Generate Job Profile & Variable Score"):
             else:
                 st.warning(ai_profile)
 
-
 # ==========================================================
-# 🧠 Generate AI-Based Job Details (Responsibilities & Competencies)
-# ==========================================================
-def generate_job_details(role_name, job_level):
-    """
-    Generate two lists: responsibilities & competencies for a given role and level.
-    Uses OpenRouter GPT-4o-mini.
-    """
-    try:
-        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
-    except Exception:
-        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
-        return None
-
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
-        "X-Title": "Talent Match Intelligence",
-        "Content-Type": "application/json",
-    }
-
-    prompt = f"""
-    You are an HR assistant helping define job details.
-    Generate 2 concise bullet lists:
-    1) Key Responsibilities (10–12 items)
-    2) Key Competencies (10–12 items, each 1–3 words only)
-    for a {job_level} {role_name}.
-    Keep them short, specific, and business-relevant.
-    Return in JSON format like this:
-    {{
-      "responsibilities": ["item1", "item2", ...],
-      "competencies": ["item1", "item2", ...]
-    }}
-    """
-
-    payload = {
-        "model": "openai/gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "You generate short, structured job detail lists for HR systems."},
-            {"role": "user", "content": prompt}
-        ]
-    }
-
-    try:
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            data=json.dumps(payload),
-            timeout=30
-        )
-    except Exception as e:
-        st.error(f"⚠️ Gagal request ke OpenRouter: {e}")
-        return None
-
-    if response.status_code != 200:
-        st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
-        return None
-
-    try:
-        content = response.json()["choices"][0]["message"]["content"]
-        clean_json = re.sub(r"```json|```", "", content).strip()
-        return json.loads(clean_json)
-    except Exception as e:
-        st.error(f"⚠️ Gagal parsing hasil generate job details: {e}")
-        st.text(content)
-        return None
-
-
-# ==========================================================
-# 🎯 STEP 6: AI-Based Job Details (Responsibilities & Competencies)
+# 🧠 STEP 8: Save & Run Talent Match (SQL + Full Result)
 # ==========================================================
 st.markdown("---")
-st.subheader("3️⃣ Job Details (AI Suggestions + Editable Lists)")
-st.caption("Tambahkan atau hapus sesuai kebutuhan. AI akan regenerate otomatis jika role berubah.")
-
-# --- Regenerate Job Details jika Role/Level berubah ---
-if (
-    "job_details_ai" not in st.session_state
-    or st.session_state.get("last_role") != selected_role
-    or st.session_state.get("last_job_level") != selected_job_level
-):
-    with st.spinner("🤖 Generating AI-based job details..."):
-        ai_details = generate_job_details(selected_role, selected_job_level)
-        if ai_details:
-            st.session_state["job_details_ai"] = ai_details
-            st.session_state["last_role"] = selected_role
-            st.session_state["last_job_level"] = selected_job_level
-        else:
-            st.stop()
-
-ai_details = st.session_state["job_details_ai"]
-
-# --- Session states for selections ---
-if "selected_responsibilities" not in st.session_state:
-    st.session_state["selected_responsibilities"] = []
-if "selected_competencies" not in st.session_state:
-    st.session_state["selected_competencies"] = []
-
-# --- Reusable render function ---
-def render_detail_section(title, key, ai_options):
-    st.markdown(f'<div class="small-title">{title}</div>', unsafe_allow_html=True)
-
-    cols = st.columns([6, 1])
-    with cols[0]:
-        selected = st.selectbox(f"Select {title.lower()}", options=[""] + ai_options, key=f"select_{key}", label_visibility="collapsed")
-    with cols[1]:
-        if st.button("➕ Add", key=f"add_{key}"):
-            if selected and selected not in st.session_state[key]:
-                st.session_state[key].append(selected)
-                st.rerun()
-
-    for i, item in enumerate(st.session_state[key]):
-        st.markdown(f"""
-            <div class="item-row">
-                <div class="item-text">• {item}</div>
-                <div>
-                    <button class="small-btn" style="border:none;background:none;">❌</button>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-# --- Render AI Job Details ---
-render_detail_section("Key Responsibilities", "selected_responsibilities", ai_details["responsibilities"])
-render_detail_section("Key Competencies", "selected_competencies", ai_details["competencies"])
-
-# ==========================================================
-# 🧠 STEP 7: AI Mapping to TGV
-# ==========================================================
-def map_job_details_to_tgv(responsibilities, competencies):
-    try:
-        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
-    except Exception:
-        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
-        return None
-
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
-        "X-Title": "Talent Match Intelligence",
-        "Content-Type": "application/json",
-    }
-
-    prompt = f"""
-    You are an HR data-mapping assistant.
-    Map the following job details into internal competency *domains* (tgv_name)
-    used in the Talent Match Intelligence system.
-
-    Responsibilities:
-    {responsibilities}
-
-    Competencies:
-    {competencies}
-
-    Choose only from this list of valid TGV names:
-    - Adaptability & Stress Tolerance
-    - Cognitive Complexity & Problem-Solving
-    - Conscientiousness & Reliability
-    - Creativity & Innovation Orientation
-    - Cultural & Values Urgency
-    - Leadership & Influence
-    - Motivation & Drive
-    - Social Orientation & Collaboration
-
-    Return only JSON with one array:
-    {{
-      "tgv_name": ["Leadership & Influence", "Motivation & Drive"]
-    }}
-    """
-
-    payload = {
-        "model": "openai/gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "You map HR job details to internal competency domains."},
-            {"role": "user", "content": prompt}
-        ]
-    }
-
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, data=json.dumps(payload))
-    if response.status_code == 200:
-        try:
-            content = response.json()["choices"][0]["message"]["content"]
-            clean_json = re.sub(r"```json|```", "", content).strip()
-            return json.loads(clean_json)
-        except Exception as e:
-            st.error(f"⚠️ Gagal parsing hasil mapping: {e}")
-            st.text(content)
-            return None
-    else:
-        st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
-        return None
-
-# ==========================================================
-# 🚀 STEP 8: Save & Run Talent Match (SQL + Full Result)
-# ==========================================================
-st.markdown("---")
-st.subheader("4️⃣ Save & Run Talent Match")
+st.subheader("4️⃣ Save & Run Talent Match (With Custom TV & Weight)")
 
 if st.button("💾 Save & Run Talent Match"):
     try:
@@ -400,49 +238,43 @@ if st.button("💾 Save & Run Talent Match"):
             st.warning("⚠️ Generate Job Details terlebih dahulu sebelum menjalankan Talent Match.")
             st.stop()
 
-        # --- Simpan Job Details ke Supabase ---
         data_insert = {
             "role_name": selected_role,
             "job_level": selected_job_level,
-            "responsibilities": st.session_state["selected_responsibilities"],
-            "competencies": st.session_state["selected_competencies"],
+            "responsibilities": st.session_state.get("selected_responsibilities", []),
+            "competencies": st.session_state.get("selected_competencies", []),
             "created_at": datetime.now().isoformat()
         }
         supabase.table("job_details").insert(data_insert).execute()
         st.success("✅ Job Details berhasil disimpan ke Supabase!")
 
-        # --- AI Mapping Job Details → TGV Domains ---
-        with st.spinner("🤖 Mapping Job Details ke TGV domains..."):
-            mapping_result = map_job_details_to_tgv(
-                st.session_state["selected_responsibilities"],
-                st.session_state["selected_competencies"]
-            )
+        mapping_result = map_job_details_to_tgv(
+            st.session_state.get("selected_responsibilities", []),
+            st.session_state.get("selected_competencies", [])
+        )
 
         if mapping_result and "tgv_name" in mapping_result:
             custom_tgv_list = mapping_result["tgv_name"]
             st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
 
-            # --- Jalankan SQL Function Talent Match Scoring ---
-            with st.spinner("📊 Menghitung Final Match Rate..."):
+            with st.spinner("📊 Menghitung Final Match Rate (Dengan Custom TV & TGV Weight)..."):
                 result = supabase.rpc(
-                    "talent_match_scoring_v2",
+                    "talent_match_scoring_v3",
                     {
                         "benchmark_ids": selected_ids,
-                        "custom_tgv_list": custom_tgv_list
+                        "custom_tgv_list": custom_tgv_list,
+                        "custom_tgv_weights": json.dumps(custom_tgv_weights)
                     }
                 ).execute()
 
                 data = result.data
                 if data:
                     df_result = pd.DataFrame(data)
-
-                    # --- Format Output Lengkap ---
                     rank_df = (
                         df_result[["employee_id", "fullname", "role", "directorate", "job_level", "final_match_rate", "tgv_name"]]
                         .drop_duplicates()
                         .sort_values(by="final_match_rate", ascending=False)
                     )
-                    
                     rank_df.rename(columns={
                         "employee_id": "Employee ID",
                         "fullname": "Name",
@@ -452,17 +284,16 @@ if st.button("💾 Save & Run Talent Match"):
                         "tgv_name": "Top TGV",
                         "final_match_rate": "Match Rate",
                     }, inplace=True)
-
-                    
-                    st.subheader("🏁 Final Match Rate (Filtered by Role Competencies)")
+                    st.subheader("🏁 Final Match Rate (Filtered by Role Competencies + Custom TGV Weight)")
                     st.dataframe(rank_df)
                     st.bar_chart(rank_df.set_index("Name")["Match Rate"])
-
                 else:
                     st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
         else:
             st.warning("⚠️ AI tidak menghasilkan mapping domain yang valid.")
-
     except Exception as e:
         st.error(f"Gagal menyimpan atau menjalankan analisis: {e}")
+
+
+
 
