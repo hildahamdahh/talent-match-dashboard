@@ -124,143 +124,38 @@ def generate_job_profile(role_name, job_level, role_purpose):
 
 
 # ==========================================================
-# 🚀 STEP 5: COMBINED BUTTON (SQL + AI)
+# 🚀 STEP 5: Generate Job Profile (AI only)
 # ==========================================================
+st.markdown("---")
+st.subheader("2️⃣ Generate AI-Based Job Profile & Variable Score")
+
 if st.button("✨ Generate Job Profile & Variable Score"):
     if not selected_ids:
-        st.warning("Pilih minimal 1 benchmark employee terlebih dahulu.")
+        st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
     else:
-        with st.spinner("⏳ Menjalankan analisis dan AI generation..."):
-            try:
-                # --- 1️⃣ Jalankan Function di Supabase ---
-                result = supabase.rpc("talent_match_scoring", {"benchmark_ids": selected_ids}).execute()
-                data = result.data
+        with st.spinner("🤖 Generating AI-based job profile..."):
+            ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
 
-                if data:
-                    df_result = pd.DataFrame(data)
-                    st.success(f"Hasil untuk role: {selected_role} (Job Level: {selected_job_level})")
+            if ai_profile and not ai_profile.startswith("⚠️"):
+                st.subheader("🧠 AI-Generated Job Profile")
 
-                    rank_df = (
-                        df_result[["employee_id", "final_match_rate"]]
-                        .drop_duplicates()
-                        .sort_values(by="final_match_rate", ascending=False)
-                    )
+                clean_text = re.sub(r"<[^>]*>", "", ai_profile)
+                clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
 
-                    st.subheader("📊 Final Match Rate per Employee")
-                    st.dataframe(rank_df)
-                    st.bar_chart(rank_df.set_index("employee_id"))
-                else:
-                    st.warning("Tidak ada hasil ditemukan dari scoring.")
-
-                # --- 2️⃣ Generate AI Job Profile ---
-                ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
-
-                # --- Tampilkan hasil AI Job Profile ---
-                if ai_profile and not ai_profile.startswith("⚠️"):
-                    st.subheader("🧠 AI-Generated Job Profile")
-
-                    clean_text = re.sub(r"<[^>]*>", "", ai_profile)
-                    clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
-
-                    st.write(clean_text)
-                    st.session_state["ai_job_profile"] = clean_text  # simpan untuk langkah selanjutnya
-                else:
-                    st.warning(ai_profile)
-
-            except Exception as e:
-                st.error(f"Terjadi kesalahan saat menjalankan analisis: {e}")
-
-
+                st.write(clean_text)
+                st.session_state["ai_job_profile"] = clean_text
+                st.success("✅ AI Job Profile berhasil dihasilkan!")
+            else:
+                st.warning(ai_profile)
 
 # ==========================================================
-# 🎯 STEP 6: Job Details (Refined UI + Short Competencies)
+# 🎯 STEP 6: AI-Based Job Details (Responsibilities & Competencies)
 # ==========================================================
-import re
-
 st.markdown("---")
-st.markdown("### 3️⃣ Job Details")
-st.caption("All fields below are required. Please add at least one item for each category.")
+st.subheader("3️⃣ Job Details (AI Suggestions + Editable Lists)")
+st.caption("Tambahkan atau hapus sesuai kebutuhan. AI akan regenerate otomatis jika role berubah.")
 
-# --- Custom CSS untuk kecilin ikon & heading ---
-st.markdown("""
-    <style>
-        .small-title {
-            font-size: 1rem !important;
-            font-weight: 600;
-            margin-bottom: 0.3rem;
-            margin-top: 1rem;
-        }
-        .item-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 3px;
-        }
-        .item-text {
-            flex-grow: 1;
-        }
-        .small-btn {
-            font-size: 0.8rem !important;
-            padding: 0 3px !important;
-            margin-left: 4px;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- Generate AI suggestions khusus job details ---
-def generate_job_details(role_name, job_level):
-    try:
-        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
-    except Exception:
-        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
-        return None
-
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
-        "X-Title": "Talent Match Intelligence",
-        "Content-Type": "application/json",
-    }
-
-    prompt = f"""
-    You are an HR assistant helping define job details.
-    Generate 2 concise bullet lists:
-    1️⃣ Key Responsibilities (10–12 items)
-    2️⃣ Key Competencies (10–12 items, each 1–3 words only)
-    for a {job_level} {role_name}.
-    Keep them short and specific.
-    """
-
-    payload = {
-        "model": "openai/gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "You generate short, structured job detail lists for HR systems."},
-            {"role": "user", "content": prompt}
-        ]
-    }
-
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, data=json.dumps(payload))
-    if response.status_code == 200:
-        text = response.json()["choices"][0]["message"]["content"]
-
-        # pisahkan dua bagian
-        responsibilities = re.findall(r"(?i)(?:responsibilit(?:y|ies)[:\-\n]+)([\s\S]*?)(?:competenc|$)", text)
-        competencies = re.findall(r"(?i)(?:competenc(?:y|ies)[:\-\n]+)([\s\S]*)", text)
-        
-        def clean_list(raw_text):
-            items = re.findall(r"[-•]\s*(.+)", raw_text)
-            return [i.strip().capitalize() for i in items if i.strip()]
-        
-        return {
-            "responsibilities": clean_list(responsibilities[0]) if responsibilities else [],
-            "competencies": clean_list(competencies[0]) if competencies else []
-        }
-    else:
-        st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
-        return None
-
-# --- Load AI suggestions ---
-# --- Load AI suggestions (auto-regenerate if role/level changes) ---
+# --- Regenerate Job Details jika Role/Level berubah ---
 if (
     "job_details_ai" not in st.session_state
     or st.session_state.get("last_role") != selected_role
@@ -277,13 +172,13 @@ if (
 
 ai_details = st.session_state["job_details_ai"]
 
-# --- Session states for selected items ---
+# --- Session states for selections ---
 if "selected_responsibilities" not in st.session_state:
     st.session_state["selected_responsibilities"] = []
 if "selected_competencies" not in st.session_state:
     st.session_state["selected_competencies"] = []
 
-# --- Fungsi render tiap kategori ---
+# --- Reusable render function ---
 def render_detail_section(title, key, ai_options):
     st.markdown(f'<div class="small-title">{title}</div>', unsafe_allow_html=True)
 
@@ -301,18 +196,17 @@ def render_detail_section(title, key, ai_options):
             <div class="item-row">
                 <div class="item-text">• {item}</div>
                 <div>
-                    <button class="small-btn" style="border:none;background:none;" onClick="window.location.reload()">✏️</button>
-                    <button class="small-btn" style="border:none;background:none;" onClick="window.location.reload()">❌</button>
+                    <button class="small-btn" style="border:none;background:none;">❌</button>
                 </div>
             </div>
         """, unsafe_allow_html=True)
 
-# --- Render dua bagian ---
+# --- Render AI Job Details ---
 render_detail_section("Key Responsibilities", "selected_responsibilities", ai_details["responsibilities"])
 render_detail_section("Key Competencies", "selected_competencies", ai_details["competencies"])
 
 # ==========================================================
-# 🧠 STEP 7: Mapping Job Details → Competency Domains (tgv_name)
+# 🧠 STEP 7: AI Mapping to TGV
 # ==========================================================
 def map_job_details_to_tgv(responsibilities, competencies):
     try:
@@ -330,7 +224,7 @@ def map_job_details_to_tgv(responsibilities, competencies):
 
     prompt = f"""
     You are an HR data-mapping assistant.
-    Map the following job details into internal competency *domains* (`tgv_name`)
+    Map the following job details into internal competency *domains* (tgv_name)
     used in the Talent Match Intelligence system.
 
     Responsibilities:
@@ -351,7 +245,7 @@ def map_job_details_to_tgv(responsibilities, competencies):
 
     Return only JSON with one array:
     {{
-      "tgv_name": ["Leadership & Influence", "Motivation & Drive", ...]
+      "tgv_name": ["Leadership & Influence", "Motivation & Drive"]
     }}
     """
 
@@ -377,15 +271,19 @@ def map_job_details_to_tgv(responsibilities, competencies):
         st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
         return None
 
-
 # ==========================================================
-# 🚀 STEP 8: Save & Run Talent Match with Custom TGV Filter
+# 🚀 STEP 8: Save & Run Talent Match (SQL + Full Result)
 # ==========================================================
 st.markdown("---")
-st.subheader("4️⃣ Run Talent Match Based on Job Details")
+st.subheader("4️⃣ Save & Run Talent Match")
 
 if st.button("💾 Save & Run Talent Match"):
     try:
+        ai_data = st.session_state.get("job_details_ai", {})
+        if not ai_data:
+            st.warning("⚠️ Generate Job Details terlebih dahulu sebelum menjalankan Talent Match.")
+            st.stop()
+
         # --- Simpan Job Details ke Supabase ---
         data_insert = {
             "role_name": selected_role,
@@ -397,8 +295,8 @@ if st.button("💾 Save & Run Talent Match"):
         supabase.table("job_details").insert(data_insert).execute()
         st.success("✅ Job Details berhasil disimpan ke Supabase!")
 
-        # --- AI Mapping Job Details → Competency Domains (TGV) ---
-        with st.spinner("🤖 Mapping Job Details ke Kompetensi Internal (TGV)..."):
+        # --- AI Mapping Job Details → TGV Domains ---
+        with st.spinner("🤖 Mapping Job Details ke TGV domains..."):
             mapping_result = map_job_details_to_tgv(
                 st.session_state["selected_responsibilities"],
                 st.session_state["selected_competencies"]
@@ -408,8 +306,8 @@ if st.button("💾 Save & Run Talent Match"):
             custom_tgv_list = mapping_result["tgv_name"]
             st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
 
-            # --- Jalankan SQL Talent Scoring Function ---
-            with st.spinner("📊 Menghitung Final Match Rate berdasarkan domain relevan..."):
+            # --- Jalankan SQL Function Talent Match Scoring ---
+            with st.spinner("📊 Menghitung Final Match Rate..."):
                 result = supabase.rpc(
                     "talent_match_scoring",
                     {
@@ -421,18 +319,24 @@ if st.button("💾 Save & Run Talent Match"):
                 data = result.data
                 if data:
                     df_result = pd.DataFrame(data)
+
+                    # --- Format Output Lengkap ---
                     rank_df = (
-                        df_result[["employee_id", "final_match_rate"]]
-                        .drop_duplicates()
+                        df_result[
+                            ["fullname", "final_match_rate", "role", "division", "department", "directorate", "job_level", "tgv_name"]
+                        ]
                         .sort_values(by="final_match_rate", ascending=False)
+                        .reset_index(drop=True)
                     )
-                    st.subheader("🏁 Final Match Rate (Filtered by Role Domains)")
-                    st.dataframe(rank_df)
-                    st.bar_chart(rank_df.set_index("employee_id"))
+
+                    st.subheader("🏁 Final Match Rate — All Employees")
+                    st.dataframe(rank_df, use_container_width=True)
+                    st.bar_chart(rank_df.set_index("fullname")["final_match_rate"])
                 else:
-                    st.warning("⚠️ Tidak ada hasil ditemukan setelah filtering.")
+                    st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
         else:
             st.warning("⚠️ AI tidak menghasilkan mapping domain yang valid.")
 
     except Exception as e:
         st.error(f"Gagal menyimpan atau menjalankan analisis: {e}")
+
