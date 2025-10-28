@@ -129,7 +129,7 @@ def generate_job_profile(role_name, job_level, role_purpose):
 
 
 # ==========================================================
-# 🚀 STEP 5: Generate Job Profile (AI only)
+# 🚀 STEP 5: Generate Job Profile & Benchmark-Only Variable Score
 # ==========================================================
 st.markdown("---")
 st.subheader("2️⃣ Generate AI-Based Job Profile & Variable Score")
@@ -150,8 +150,51 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 st.write(clean_text)
                 st.session_state["ai_job_profile"] = clean_text
                 st.success("✅ AI Job Profile berhasil dihasilkan!")
+
+                # ==========================================================
+                # 🧮 Langsung Hitung Talent Match (Benchmark-Only)
+                # ==========================================================
+                with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
+                    try:
+                        result = supabase.rpc(
+                            "talent_match_scoring_v2",
+                            {
+                                "benchmark_ids": selected_ids,
+                                "custom_tgv_list": None  # Tanpa filter job details
+                            }
+                        ).execute()
+
+                        data = result.data
+                        if data:
+                            df_result = pd.DataFrame(data)
+
+                            rank_df = (
+                                df_result[["employee_id", "fullname", "role", "directorate", "job_level", "final_match_rate", "tgv_name"]]
+                                .drop_duplicates()
+                                .sort_values(by="final_match_rate", ascending=False)
+                            )
+                            
+                            rank_df.rename(columns={
+                                "employee_id": "Employee ID",
+                                "fullname": "Name",
+                                "role": "Role",
+                                "directorate": "Directorate",
+                                "job_level": "Job Level",
+                                "tgv_name": "Top TGV",
+                                "final_match_rate": "Match Rate",
+                            }, inplace=True)
+
+                            st.subheader("🏁 Final Match Rate (Benchmark Only)")
+                            st.dataframe(rank_df)
+                            st.bar_chart(rank_df.set_index("Name")["Match Rate"])
+                        else:
+                            st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+                    except Exception as e:
+                        st.error(f"Gagal menjalankan Talent Match Scoring: {e}")
+
             else:
                 st.warning(ai_profile)
+
 
 # ==========================================================
 # 🧠 Generate AI-Based Job Details (Responsibilities & Competencies)
