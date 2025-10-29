@@ -131,6 +131,12 @@ with tab1:
             max_selections=3,
             placeholder="Choose employee benchmarking"
         )
+    # --- simpan pilihan benchmark ke session_state supaya bisa diakses dari tab lain ---
+    if "benchmark_selected" not in st.session_state:
+        st.session_state["benchmark_selected"] = []
+    
+    if selected is not None:
+        st.session_state["benchmark_selected"] = selected
 
     # ==========================================================
     # 🚀 Generate Job Profile & Variable Score
@@ -503,27 +509,39 @@ with tab2:
     st.markdown("</div></div>", unsafe_allow_html=True)
 
 
-# ==========================================================
+    # ==========================================================
     # 💾 SAVE & RUN TALENT MATCH
     # ==========================================================
     if st.button("💾 Save & Run Talent Match", key="run_talent_match"):
         with st.spinner("Running Talent Match analysis..."):
             try:
-                benchmark_ids = [emp['employee_id'] for emp in benchmark_selected]
-                custom_tgv_list = {"tgv_list": selected_tgv_list}
-
+                # ambil benchmark dari session_state
+                sel = st.session_state.get("benchmark_selected", [])
+                if not sel:
+                    st.warning("⚠️ Pilih minimal 1 benchmark employee di tab Role Information terlebih dahulu.")
+                    st.stop()
+    
+                # extract employee_id (contoh: 'EMP001 - Nama' → ambil 'EMP001')
+                benchmark_ids = [s.split(" - ")[0] for s in sel]
+    
+                # ambil daftar TGV custom (sementara pakai hasil competencies)
+                selected_tgv_list = st.session_state.get("selected_competencies", [])
+                custom_tgv_list = {"tgv_list": selected_tgv_list} if selected_tgv_list else None
+    
+                # panggil RPC (ganti nama function sesuai SQL kamu)
                 response = supabase.rpc(
                     "talentmatch_r2_fix",
                     {
                         "benchmark_ids": benchmark_ids,
-                        "custom_tgv_list": json.dumps(custom_tgv_list)
+                        "custom_tgv_list": json.dumps(custom_tgv_list) if custom_tgv_list else None
                     }
                 ).execute()
-
+    
+                # tampilkan hasil
                 if response.data:
                     df_result = pd.DataFrame(response.data)
                     st.success("✅ Talent Match analysis completed!")
-                    st.dataframe(df_result)
+                    st.dataframe(df_result, use_container_width=True)
                 else:
                     st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
             except Exception as e:
