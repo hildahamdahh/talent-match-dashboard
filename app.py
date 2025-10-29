@@ -21,53 +21,105 @@ url = "https://cckdfjxowgowgxufnhnj.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
 supabase: Client = create_client(url, key)
 
+st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
 st.title("🎯 Talent Match Intelligence Dashboard (Simplified)")
 
 # ==========================================================
-# 🧩 STEP 1: Ambil Semua Employee
+# 🧩 STEP 1: Ambil Semua Employee (rating = 5)
 # ==========================================================
 try:
     response = supabase.table("employee_tv_scores").select(
-    "employee_id, fullname"
-).eq("rating", 5).execute()
+        "employee_id, fullname, position_name, job_level"
+    ).eq("rating", 5).execute()
     data = response.data
 except Exception as e:
     st.error(f"Gagal mengambil data: {e}")
     st.stop()
 
 if not data:
-    st.warning("⚠️ Tidak ada data employee ditemukan.")
+    st.warning("⚠️ Tidak ada data employee ditemukan (rating = 5).")
     st.stop()
 
 df = pd.DataFrame(data)
 
 # ==========================================================
-# 👥 STEP 2: Pilih Employee
+# 🧭 STEP 1: Role Information (berdasarkan position_name)
 # ==========================================================
-st.subheader("1️⃣ Pilih Employee")
+st.subheader("1️⃣ Role Information")
 
-employee_options = df["employee_id"].tolist()
-selected_ids = st.multiselect("Pilih Employee ID", employee_options)
+# Dropdown position_name (dulu role_name)
+if "position_name" in df.columns:
+    role_names = sorted(df["position_name"].dropna().unique())
+    selected_role = st.selectbox("Position Name", ["-- pilih posisi --"] + role_names)
+    if selected_role == "-- pilih posisi --":
+        selected_role = None
+else:
+    st.info("Kolom 'position_name' tidak ditemukan di tabel employee_tv_scores.")
+    selected_role = None
+
+# Dropdown job_level (jika ada)
+if selected_role and "job_level" in df.columns:
+    filtered_for_level = df[df["position_name"] == selected_role]
+    job_levels = sorted(filtered_for_level["job_level"].dropna().unique())
+    if job_levels:
+        selected_job_level = st.selectbox("Job Level", ["-- pilih job level --"] + job_levels)
+        if selected_job_level == "-- pilih job level --":
+            selected_job_level = None
+    else:
+        selected_job_level = None
+else:
+    selected_job_level = None
+
+# Text area untuk Role Purpose
+role_purpose = st.text_area(
+    "Role Purpose",
+    placeholder="Contoh: Ensure production targets are met with optimal quality and cost efficiency"
+)
 
 # ==========================================================
-# 🚀 STEP 3: Generate Result
+# 👥 STEP 2: Employee Benchmarking
 # ==========================================================
-if st.button("🚀 Generate AI-Based Job Profile & Variable Score"):
-    if selected_ids:
+st.markdown("---")
+st.subheader("2️⃣ Employee Benchmarking")
+
+# Filter berdasarkan posisi & job level jika dipilih
+if selected_role:
+    df_emp_options = df[df["position_name"] == selected_role].copy()
+else:
+    df_emp_options = df.copy()
+
+if selected_job_level and "job_level" in df_emp_options.columns:
+    df_emp_options = df_emp_options[df_emp_options["job_level"] == selected_job_level]
+
+if df_emp_options.empty:
+    st.warning("⚠️ Tidak ada employee benchmark yang cocok dengan posisi/job level pilihan.")
+else:
+    df_emp_options["label"] = df_emp_options["employee_id"] + " - " + df_emp_options["fullname"]
+    selected = st.multiselect(
+        "Pilih Employee Benchmark (maks 3):",
+        options=df_emp_options["label"].tolist(),
+        max_selections=3
+    )
+
+# ==========================================================
+# 🚀 STEP 3: Generate Job Profile & Variable Score
+# ==========================================================
+st.markdown("---")
+if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
+    if not (selected and len(selected) > 0):
+        st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
+    else:
+        selected_ids = [s.split(" - ")[0] for s in selected]
         try:
-            # Panggil SQL function (ambil_employee_detail)
             result = supabase.rpc("ambil_employee_detail", {"selected_ids": selected_ids}).execute()
-
             if result.data:
-                result_df = pd.DataFrame(result.data)[["employee_id", "fullname"]].drop_duplicates()
-                st.subheader("🏁 Hasil")
-                st.dataframe(result_df, use_container_width=True)
+                df_result = pd.DataFrame(result.data)[["employee_id", "fullname"]].drop_duplicates()
+                st.subheader("🏁 Hasil Benchmarking")
+                st.dataframe(df_result, use_container_width=True)
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
         except Exception as e:
             st.error(f"Gagal menjalankan query: {e}")
-    else:
-        st.warning("Silakan pilih minimal satu employee dulu.")
 
 
 
