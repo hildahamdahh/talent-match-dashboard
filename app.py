@@ -191,9 +191,9 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
     
-    except Exception as e:
-        st.error(f"Gagal menjalankan query: {e}")    
 
+        except Exception as e:
+            st.error(f"Gagal menjalankan query: {e}")
 
 
 
