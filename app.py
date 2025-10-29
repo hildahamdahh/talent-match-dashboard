@@ -144,24 +144,28 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
         try:
             # 🔹 Jalankan function ambil_employee_detail
             result = supabase.rpc("ambil_employee_detail", {"selected_ids": selected_ids}).execute()
-            
+
             if result.data:
                 df_result = pd.DataFrame(result.data)
-                
-                # 🔹 Pastikan hanya kolom yang kamu mau ditampilkan
-                desired_cols = ["tv_name", "tgv_name", "tv_weight", "tgv_weight", "baseline_score"]
-                available_cols = [col for col in desired_cols if col in df_result.columns]
-                
-                if not available_cols:
-                    st.warning("⚠️ Kolom hasil tidak sesuai (tv_name, tgv_name, tv_weight, tgv_weight, baseline_score).")
-                else:
-                    st.subheader("🏁 Hasil Benchmarking (TV & TGV Weight)")
-                    st.dataframe(df_result[available_cols], use_container_width=True)
+
+                # 🔹 Urutkan kolom sesuai output final
+                desired_cols = [
+                    "employee_id", "fullname", "rating", "position_name", "job_level",
+                    "tv_name", "tgv_name", "tv_weight", "tgv_weight", "baseline_score"
+                ]
+                available_cols = [c for c in desired_cols if c in df_result.columns]
+                df_result = df_result[available_cols]
+
+                # 🔹 Tampilkan hasil di Streamlit
+                st.subheader("🏁 Hasil Benchmarking (TV & TGV Baseline)")
+                st.dataframe(df_result, use_container_width=True)
+
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
-        
+
         except Exception as e:
             st.error(f"Gagal menjalankan query: {e}")
+
 
 
 
