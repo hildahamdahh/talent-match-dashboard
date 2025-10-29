@@ -104,6 +104,7 @@ st.caption("Example: Ensure production targets are met with optimal quality and 
 # ==========================================================
 st.markdown('<div class="sub-label">Employee Benchmarking</div>', unsafe_allow_html=True)
 
+# Filter sesuai role dan job level yang dipilih
 if selected_role != "Ex. Marketing Manager":
     df_emp_options = df[df["position_name"] == selected_role].copy()
 else:
@@ -112,10 +113,18 @@ else:
 if selected_job_level != "Choose your job level":
     df_emp_options = df_emp_options[df_emp_options["job_level"] == selected_job_level]
 
+# Pastikan distinct employee_id
+df_emp_options = df_emp_options.drop_duplicates(subset=["employee_id"])
+
 if df_emp_options.empty:
     st.warning("⚠️ Tidak ada employee benchmark yang cocok dengan posisi/job level pilihan.")
 else:
-    df_emp_options["label"] = df_emp_options["employee_id"] + " - " + df_emp_options["fullname"]
+    # Tampilkan label: EMP001 - Hilda (Data Analyst)
+    df_emp_options["label"] = (
+        df_emp_options["employee_id"] + " - " + df_emp_options["fullname"] +
+        " (" + df_emp_options["position_name"] + ")"
+    )
+
     selected = st.multiselect(
         "Select Employee Benchmarking (max 3)",
         options=df_emp_options["label"].tolist(),
