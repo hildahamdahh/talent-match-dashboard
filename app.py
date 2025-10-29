@@ -188,6 +188,28 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
                 # ==========================================================
                 with st.expander("🔍 Full Supporting Benchmark Details"):
                     st.dataframe(df_result, use_container_width=True)
+                    
+                # ==========================================================
+                # 🧠 STEP 4: Dashboard Insights & Visualization
+                # ==========================================================
+                st.markdown("---")
+                st.markdown("## 📊 Dashboard Insights & Visualization")
+                
+                # ===============================
+                # 1️⃣ Match-Rate Distribution
+                # ===============================
+                st.markdown("### 📈 Match-Rate Distribution")
+                import plotly.express as px
+                
+                fig_hist = px.histogram(
+                    df_result,
+                    x="final_match_rate",
+                    nbins=10,
+                    title="Distribution of Final Match Rates",
+                    labels={"final_match_rate": "Final Match Rate (%)"},
+                    color_discrete_sequence=["#4C78A8"]
+                )
+                st.plotly_chart(fig_hist, use_container_width=True)
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
     
