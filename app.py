@@ -14,39 +14,59 @@ import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
 
-# Supabase connection
+# ==========================================================
+# 🔗 KONEKSI SUPABASE
+# ==========================================================
 url = "https://cckdfjxowgowgxufnhnj.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
+key = "your-anon-key"
 supabase: Client = create_client(url, key)
 
 st.title("🎯 Talent Match Intelligence Dashboard (Simplified)")
 
-# 🔹 Load all benchmark employees (rating 5)
-response = supabase.table("employee_tv_scores").select(
-    "employee_id, fullname, role_name, rating"
-).eq("rating", 5).execute()
+# ==========================================================
+# 🧩 STEP 1: Ambil Semua Employee
+# ==========================================================
+try:
+    response = supabase.table("employee_tv_scores").select("employee_id, fullname").execute()
+    data = response.data
+except Exception as e:
+    st.error(f"Gagal mengambil data: {e}")
+    st.stop()
 
-if response.data:
-    df = pd.DataFrame(response.data)
+if not data:
+    st.warning("⚠️ Tidak ada data employee ditemukan.")
+    st.stop()
 
-    st.subheader("1️⃣ Pilih Employee Benchmark")
-    employee_options = df["employee_id"].tolist()
-    selected_ids = st.multiselect("Pilih Employee ID", employee_options)
+df = pd.DataFrame(data)
 
-    if st.button("🚀 Generate AI-Based Job Profile & Variable Score"):
-        if selected_ids:
-            # Call SQL function with selected employee IDs
+# ==========================================================
+# 👥 STEP 2: Pilih Employee
+# ==========================================================
+st.subheader("1️⃣ Pilih Employee")
+
+employee_options = df["employee_id"].tolist()
+selected_ids = st.multiselect("Pilih Employee ID", employee_options)
+
+# ==========================================================
+# 🚀 STEP 3: Generate Result
+# ==========================================================
+if st.button("🚀 Generate AI-Based Job Profile & Variable Score"):
+    if selected_ids:
+        try:
+            # Panggil SQL function (ambil_employee_detail)
             result = supabase.rpc("ambil_employee_detail", {"selected_ids": selected_ids}).execute()
 
             if result.data:
-                result_df = pd.DataFrame(result.data)
-                st.dataframe(result_df)
+                result_df = pd.DataFrame(result.data)[["employee_id", "fullname"]].drop_duplicates()
+                st.subheader("🏁 Hasil")
+                st.dataframe(result_df, use_container_width=True)
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
-        else:
-            st.warning("Silakan pilih minimal satu employee dulu.")
-else:
-    st.warning("⚠️ Tidak ada data benchmark ditemukan.")
+        except Exception as e:
+            st.error(f"Gagal menjalankan query: {e}")
+    else:
+        st.warning("Silakan pilih minimal satu employee dulu.")
+
 
 
 
