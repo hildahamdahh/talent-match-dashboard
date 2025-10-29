@@ -18,7 +18,7 @@ import pandas as pd
 # 🔗 KONEKSI SUPABASE
 # ==========================================================
 url = "https://cckdfjxowgowgxufnhnj.supabase.co"
-key = "your-anon-key"
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
 supabase: Client = create_client(url, key)
 
 st.title("🎯 Talent Match Intelligence Dashboard (Simplified)")
