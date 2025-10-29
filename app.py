@@ -154,7 +154,7 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
                     "employee_id", "fullname", "position_name", "job_level", "rating",
                     "tgv_name", "tv_name", "category_type",
                     "baseline_score",
-                    "tv_weight", "tgv_weight","tv_match_rate","user_score","tv_match_rat" ,
+                    "tv_weight", "tgv_weight","tv_match_rate","user_score","tv_match_rate" ,
                     "tgv_match_rate" , "final_match_rate"
                 ]
 
