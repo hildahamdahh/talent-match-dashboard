@@ -22,10 +22,41 @@ key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNj
 supabase: Client = create_client(url, key)
 
 st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
-st.title("🎯 Talent Match Intelligence Dashboard (Simplified)")
+st.markdown(
+    """
+    <style>
+    /* Style Section Header */
+    .section-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #0E1117;
+        border-bottom: 1px solid #e1e1e1;
+        padding-bottom: 0.3rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Style Sub Label (smaller text) */
+    .sub-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #333333;
+        margin-top: 1.5rem;
+        margin-bottom: 0.3rem;
+    }
+
+    /* Make Streamlit widgets spacing tighter */
+    div[data-baseweb="select"] > div {
+        min-height: 2rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.title("🎯 Talent Match Intelligence Dashboard")
 
 # ==========================================================
-# 🧩 STEP 1: Ambil Semua Employee (rating = 5)
+# 🧩 STEP 1: Ambil Semua Employee
 # ==========================================================
 try:
     response = supabase.table("employee_tv_scores").select(
@@ -43,52 +74,42 @@ if not data:
 df = pd.DataFrame(data)
 
 # ==========================================================
-# 🧭 STEP 1: Role Information (berdasarkan position_name)
+# 🧭 STEP 1: Role Information
 # ==========================================================
-st.subheader("1️⃣ Role Information")
+st.markdown('<div class="section-header">1. Role Information</div>', unsafe_allow_html=True)
 
-# Dropdown position_name (dulu role_name)
-if "position_name" in df.columns:
-    role_names = sorted(df["position_name"].dropna().unique())
-    selected_role = st.selectbox("Position Name", ["-- pilih posisi --"] + role_names)
-    if selected_role == "-- pilih posisi --":
-        selected_role = None
-else:
-    st.info("Kolom 'position_name' tidak ditemukan di tabel employee_tv_scores.")
-    selected_role = None
+# Role Name
+role_names = sorted(df["position_name"].dropna().unique())
+selected_role = st.selectbox("Role Name", ["Ex. Marketing Manager"] + role_names)
 
-# Dropdown job_level (jika ada)
-if selected_role and "job_level" in df.columns:
+# Job Level
+if selected_role != "Ex. Marketing Manager":
     filtered_for_level = df[df["position_name"] == selected_role]
     job_levels = sorted(filtered_for_level["job_level"].dropna().unique())
-    if job_levels:
-        selected_job_level = st.selectbox("Job Level", ["-- pilih job level --"] + job_levels)
-        if selected_job_level == "-- pilih job level --":
-            selected_job_level = None
-    else:
-        selected_job_level = None
 else:
-    selected_job_level = None
+    job_levels = sorted(df["job_level"].dropna().unique())
 
-# Text area untuk Role Purpose
+selected_job_level = st.selectbox("Job Level", ["Choose your job level"] + job_levels)
+
+# Role Purpose
 role_purpose = st.text_area(
     "Role Purpose",
-    placeholder="Contoh: Ensure production targets are met with optimal quality and cost efficiency"
+    placeholder="1–2 sentences to describe role outcome"
 )
 
-# ==========================================================
-# 👥 STEP 2: Employee Benchmarking
-# ==========================================================
-st.markdown("---")
-st.subheader("2️⃣ Employee Benchmarking")
+st.caption("Example: Ensure production targets are met with optimal quality and cost efficiency")
 
-# Filter berdasarkan posisi & job level jika dipilih
-if selected_role:
+# ==========================================================
+# 👥 Employee Benchmarking (inline section)
+# ==========================================================
+st.markdown('<div class="sub-label">Employee Benchmarking</div>', unsafe_allow_html=True)
+
+if selected_role != "Ex. Marketing Manager":
     df_emp_options = df[df["position_name"] == selected_role].copy()
 else:
     df_emp_options = df.copy()
 
-if selected_job_level and "job_level" in df_emp_options.columns:
+if selected_job_level != "Choose your job level":
     df_emp_options = df_emp_options[df_emp_options["job_level"] == selected_job_level]
 
 if df_emp_options.empty:
@@ -96,9 +117,10 @@ if df_emp_options.empty:
 else:
     df_emp_options["label"] = df_emp_options["employee_id"] + " - " + df_emp_options["fullname"]
     selected = st.multiselect(
-        "Pilih Employee Benchmark (maks 3):",
+        "Select Employee Benchmarking (max 3)",
         options=df_emp_options["label"].tolist(),
-        max_selections=3
+        max_selections=3,
+        placeholder="Choose employee benchmarking"
     )
 
 # ==========================================================
@@ -120,6 +142,7 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
         except Exception as e:
             st.error(f"Gagal menjalankan query: {e}")
+
 
 
 
