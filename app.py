@@ -41,6 +41,17 @@ st.title("🎯 Talent Match Intelligence Dashboard")
 # ==========================================================
 # 🧭 TAB SETUP
 # ==========================================================
+# Center the tab labels
+st.markdown(
+    """
+    <style>
+    div[data-baseweb="tab-list"] {
+        justify-content: center;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 tab1, tab2 = st.tabs(["🧩 Role Information", "🧠 Job Details"])
 
 # ==========================================================
