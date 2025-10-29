@@ -150,7 +150,7 @@ with tab1:
         else:
             selected_ids = [s.split(" - ")[0] for s in selected]
             try:
-                result = supabase.rpc("ambil_employee_detail_r3_fix", {"selected_ids": selected_ids}).execute()
+                result = supabase.rpc("talentmatch_r2_fix", {"selected_ids": selected_ids}).execute()
                 if result.data:
                     df_result = pd.DataFrame(result.data)
                     desired_cols = [
@@ -505,7 +505,31 @@ with tab2:
     st.markdown("</div></div>", unsafe_allow_html=True)
 
 
+# ==========================================================
+    # 💾 SAVE & RUN TALENT MATCH
+    # ==========================================================
+    if st.button("💾 Save & Run Talent Match", key="run_talent_match"):
+        with st.spinner("Running Talent Match analysis..."):
+            try:
+                benchmark_ids = [emp['employee_id'] for emp in benchmark_selected]
+                custom_tgv_list = {"tgv_list": selected_tgv_list}
 
+                response = supabase.rpc(
+                    "talentmatch_r2_fix",
+                    {
+                        "benchmark_ids": benchmark_ids,
+                        "custom_tgv_list": json.dumps(custom_tgv_list)
+                    }
+                ).execute()
+
+                if response.data:
+                    df_result = pd.DataFrame(response.data)
+                    st.success("✅ Talent Match analysis completed!")
+                    st.dataframe(df_result)
+                else:
+                    st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
 
 
 
