@@ -142,8 +142,20 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
     else:
         selected_ids = [s.split(" - ")[0] for s in selected]
         try:
-            # 🔹 Jalankan function ambil_employee_detail
-            result = supabase.rpc("ambil_employee_detail", {"selected_ids": selected_ids}).execute()
+        
+            # Ambil semua employee_id dari tabel (supaya all_employee_ids keisi)
+            response_all = supabase.table("employee_tv_scores").select("employee_id").execute()
+            all_employee_ids = [row["employee_id"] for row in response_all.data]
+            
+            # Panggil function SQL baru (dengan 2 parameter)
+            result = supabase.rpc(
+                "ambil_employee_detail",
+                {
+                    "benchmark_ids": selected_ids,
+                    "all_employee_ids": all_employee_ids
+                }
+            ).execute()
+
 
             if result.data:
                 df_result = pd.DataFrame(result.data)
