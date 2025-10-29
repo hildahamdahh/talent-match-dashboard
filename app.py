@@ -429,11 +429,18 @@ with tab2:
             st.text(content)
             return None
 
-    # ====== Generate AI Details (Hanya Sekali) ======
+
+    # --- Generate AI Details (cached per Role & Job Level) ---
+    if "job_details_ai" not in st.session_state:
+        st.session_state["job_details_ai"] = None
+        st.session_state["last_role"] = None
+        st.session_state["last_job_level"] = None
+    
+    # hanya generate ulang kalau role/job level berubah
     if (
-        "job_details_ai" not in st.session_state
-        or st.session_state.get("last_role") != selected_role
-        or st.session_state.get("last_job_level") != selected_job_level
+        st.session_state["job_details_ai"] is None
+        or st.session_state["last_role"] != selected_role
+        or st.session_state["last_job_level"] != selected_job_level
     ):
         with st.spinner("🤖 Generating AI-based job details..."):
             ai_details = generate_job_details(selected_role, selected_job_level)
@@ -443,8 +450,10 @@ with tab2:
                 st.session_state["last_job_level"] = selected_job_level
             else:
                 st.stop()
+    else:
+        ai_details = st.session_state["job_details_ai"]
 
-    ai_details = st.session_state["job_details_ai"]
+
 
     # ====== Initialize Session States ======
     st.session_state.setdefault("selected_responsibilities", [])
