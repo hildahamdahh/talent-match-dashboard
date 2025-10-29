@@ -157,7 +157,7 @@ if st.button("✨ Generate Job Profile & Variable Score"):
                 with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
                     try:
                         result = supabase.rpc(
-                            "talent_match_scoring_v10",
+                            "talent_match_scoring_v11",
                             {
                                 "benchmark_ids": selected_ids ,
                                 "custom_tgv_list": None  # Tanpa filter job details
