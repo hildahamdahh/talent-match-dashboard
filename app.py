@@ -7,143 +7,277 @@ Original file is located at
     https://colab.research.google.com/drive/1eXC7zJPr4XJ4uHj5cjOkW1G50y_8Vbj-
 """
 
+# -*- coding: utf-8 -*-
+"""Talent Match Intelligence Dashboard (v3.1_fixed_rpc)"""
+
+# ==========================================================
+# 🎯 TALENT MATCH INTELLIGENCE DASHBOARD (FINAL v3.1 FIXED)
+# ==========================================================
+# ✅ Fixes:
+# - Supabase RPC return kosong padahal SQL ada hasil → JSON param fix
+# - custom_tgv_weights dikonversi json.dumps() biar terbaca
+# - custom_tgv_list dikirim selalu list (bukan None)
+# ==========================================================
+
 import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
+import requests
 import json
+import re
+from datetime import datetime
 
-# ==============================================================
-# 🧠 SETUP SUPABASE
-# ==============================================================
-SUPABASE_URL = st.secrets["https://cckdfjxowgowgxufnhnj.supabase.co"]
-SUPABASE_KEY = st.secrets["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"]
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# ==========================================================
+# 🔌 Koneksi ke Supabase
+# ==========================================================
+url = "https://cckdfjxowgowgxufnhnj.supabase.co"
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNja2Rmanhvd2dvd2d4dWZuaG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDY4NDgsImV4cCI6MjA3NzEyMjg0OH0.JXb-yqbBu_OSLpG03AlnfZI5K_eRKyhfGw4glE0Cj0o"
+supabase: Client = create_client(url, key)
 
 st.set_page_config(page_title="Talent Match Intelligence", layout="wide")
+st.title("🎯 Talent Match Intelligence Dashboard (v3.1)")
+st.caption("Version 3.1 — benchmark + custom TGV weight + AI job profile")
 
-st.title("💼 Talent Match Intelligence v3.2")
-st.caption("Final version — with AI Job Profile, custom TGV weight, & TV list.")
+# ==========================================================
+# 🧩 STEP 1: Ambil data benchmark dari Supabase
+# ==========================================================
+try:
+    response = supabase.table("talent_benchmark").select("*").execute()
+    benchmark_data = response.data
+except Exception as e:
+    st.error(f"Gagal mengambil data: {e}")
+    st.stop()
 
-# ==============================================================
-# 1️⃣ PILIH BENCHMARK (RATING 5)
-# ==============================================================
-st.subheader("🏆 Select Employee Benchmark")
+if not benchmark_data:
+    st.warning("Tabel 'talent_benchmark' masih kosong.")
+    st.stop()
 
-employees = supabase.table("employee_master").select("employee_id, fullname, role_name, rating").eq("rating", 5).execute()
-df_emp = pd.DataFrame(employees.data)
+df_benchmark = pd.DataFrame(benchmark_data)
+
+# ==========================================================
+# 🧭 STEP 2: Input dari user (parameter runtime)
+# ==========================================================
+st.subheader("1️⃣ Role Information & Custom TGV Weighting")
+
+role_names = sorted(df_benchmark["role_name"].dropna().unique())
+selected_role = st.selectbox("Role Name", role_names)
+
+filtered_df = df_benchmark[df_benchmark["role_name"] == selected_role]
+job_levels = filtered_df["job_level"].dropna().unique()
+selected_job_level = st.selectbox("Job Level", job_levels)
+
+role_purpose = st.text_area(
+    "Role Purpose",
+    placeholder="Contoh: Ensure production targets are met with optimal quality and cost efficiency"
+)
+
+# ==========================================================
+# ⚖️ Custom TGV Weight Slider
+# ==========================================================
+st.markdown("#### ⚖️ Custom TGV Weight Adjustment")
+st.caption("Atur bobot kompetensi (TGV) sesuai kebutuhan posisi. Total harus = 1.00")
+
+tgv_list_ref = [
+    "Adaptability & Stress Tolerance",
+    "Cognitive Complexity & Problem-Solving",
+    "Conscientiousness & Reliability",
+    "Creativity & Innovation Orientation",
+    "Cultural & Values Urgency",
+    "Leadership & Influence",
+    "Motivation & Drive",
+    "Social Orientation & Collaboration"
+]
+
+custom_tgv_weights = {}
+total_weight = 0
+
+cols = st.columns(4)
+for i, tgv in enumerate(tgv_list_ref):
+    with cols[i % 4]:
+        w = st.slider(f"{tgv}", 0.0, 0.4, 0.1, 0.01)
+        custom_tgv_weights[tgv] = w
+        total_weight += w
+
+st.write(f"**Total Weight = {round(total_weight, 2)}**")
+if abs(total_weight - 1.0) > 0.01:
+    st.warning("⚠️ Total weight sebaiknya mendekati 1.00 agar proporsional.")
+
+# ==========================================================
+# 👥 STEP 3: Pilih Employee Benchmark
+# ==========================================================
+st.subheader("2️⃣ Employee Benchmarking")
+
+if "rating" in filtered_df.columns:
+    filtered_df = filtered_df[filtered_df["rating"].astype(str) == "5"]
 
 employee_options = [
     f"{row['employee_id']} - {row['fullname']} ({row['role_name']})"
-    for _, row in df_emp.iterrows()
+    for _, row in filtered_df.iterrows()
 ]
 
-selected = st.multiselect("Choose Top Performer(s):", employee_options)
-
-selected_ids = [s.split(" - ")[0] for s in selected]
-
-# ==============================================================
-# 2️⃣ CUSTOMIZE TGV WEIGHTS
-# ==============================================================
-st.subheader("⚙️ Customize Success Formula Weight")
-
-default_weights = {
-    "Adaptability & Stress Tolerance": 0.08,
-    "Cognitive Complexity & Problem-Solving": 0.20,
-    "Conscientiousness & Reliability": 0.14,
-    "Creativity & Innovation Orientation": 0.06,
-    "Cultural & Values Urgency": 0.02,
-    "Leadership & Influence": 0.22,
-    "Motivation & Drive": 0.18,
-    "Social Orientation & Collaboration": 0.10,
-}
-
-cols = st.columns(4)
-custom_tgv_weights = {}
-for i, (k, v) in enumerate(default_weights.items()):
-    with cols[i % 4]:
-        custom_tgv_weights[k] = st.number_input(k, min_value=0.0, max_value=1.0, value=v, step=0.01)
-
-# normalize
-total = sum(custom_tgv_weights.values())
-if total != 1.0:
-    st.warning(f"⚠️ Total weight = {total:.2f}. Automatically normalized to 1.0")
-    custom_tgv_weights = {k: v / total for k, v in custom_tgv_weights.items()}
-
-# ==============================================================
-# 3️⃣ GENERATE JOB PROFILE & VARIABLE SCORE
-# ==============================================================
-st.subheader("🧩 Generate AI Job Profile")
-
-if st.button("✨ Generate Job Profile & Variable Score", use_container_width=True):
-    if not selected_ids:
-        st.error("Please select at least one benchmark employee.")
-    else:
-        with st.spinner("Running Talent Match Scoring..."):
-            result = supabase.rpc(
-                "talent_match_scoring_v3",
-                {
-                    "benchmark_ids": selected_ids,
-                    "custom_tgv_list": None,
-                    "custom_tgv_weights": custom_tgv_weights,
-                    "employee_id": None  # ✅ FIX ARGUMENT 4
-                }
-            ).execute()
-
-        if not result.data:
-            st.warning("⚠️ No results found from scoring.")
-        else:
-            df_result = pd.DataFrame(result.data)
-            st.dataframe(df_result, use_container_width=True)
-            st.success("✅ Job Profile & Variable Score generated successfully!")
-
-# ==============================================================
-# 4️⃣ OPTIONAL — CUSTOM TV LIST
-# ==============================================================
-st.subheader("🧠 Custom Talent Variables (Optional)")
-
-custom_tv_list = st.text_area(
-    "Enter your custom Talent Variables (comma separated)",
-    placeholder="Example: Futuristic, Intellection, Developer, Context, Positivity"
+selected_employees = st.multiselect(
+    "Pilih maksimal 3 karyawan sebagai benchmark:",
+    options=employee_options,
+    max_selections=3
 )
+selected_ids = [emp.split(" - ")[0] for emp in selected_employees]
 
-custom_tv_list = [t.strip() for t in custom_tv_list.split(",") if t.strip()] or None
+# ==========================================================
+# 🧠 STEP 4: AI Job Profile Generator
+# ==========================================================
+def generate_job_profile(role_name, job_level, role_purpose):
+    try:
+        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+    except Exception:
+        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+        return None
 
-# ==============================================================
-# 5️⃣ RUN TALENT MATCH (FINAL)
-# ==============================================================
-st.subheader("🚀 Run Talent Match Scoring")
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+        "X-Title": "Talent Match Intelligence",
+        "Content-Type": "application/json",
+    }
 
-if st.button("💾 Save & Run Talent Match", use_container_width=True):
-    if not selected_ids:
-        st.error("Please select at least one benchmark employee.")
+    prompt = f"""
+    You are an HR Talent Intelligence Assistant.
+    Generate a clear, structured job profile for a {job_level} {role_name}.
+    Include:
+    1️⃣ Job Requirements
+    2️⃣ Job Description
+    3️⃣ Key Competencies
+    Context: {role_purpose}
+    """
+
+    payload = {
+        "model": "openai/gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You generate concise job profiles for HR."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                             headers=headers, data=json.dumps(payload))
+
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
     else:
-        with st.spinner("Running final match computation..."):
-        
-            result = supabase.rpc(
-                "talent_match_scoring_v3",
-                {
-                    "benchmark_ids": selected_ids,
-                    "custom_tgv_list": json.dumps(custom_tv_list) if custom_tv_list else None,
-                    "custom_tgv_weights": json.dumps(custom_tgv_weights),
-                    "employee_id": None
-                }
-            ).execute()
+        return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
 
-        if not result.data:
-            st.warning("⚠️ No results found from scoring.")
-        else:
-            df_final = pd.DataFrame(result.data)
-            st.dataframe(df_final, use_container_width=True)
-            st.success("🎯 Talent Match completed successfully!")
-
-            csv = df_final.to_csv(index=False).encode("utf-8")
-            st.download_button("⬇️ Download Results as CSV", csv, "talent_match_results.csv", "text/csv")
-
-# ==============================================================
-# 🧭 FOOTER
-# ==============================================================
+# ==========================================================
+# 🚀 STEP 5: Generate Job Profile & Benchmark-Only Variable Score
+# ==========================================================
 st.markdown("---")
-st.caption("Developed for Talent Match Intelligence | v3.2 — 2025")
+st.subheader("3️⃣ Generate AI-Based Job Profile & Variable Score")
+
+if st.button("✨ Generate Job Profile & Variable Score"):
+    if not selected_ids:
+        st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
+    else:
+        with st.spinner("🤖 Generating AI-based job profile..."):
+            ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
+
+        if ai_profile and not ai_profile.startswith("⚠️"):
+            st.subheader("🧠 AI-Generated Job Profile")
+            clean_text = re.sub(r"<[^>]*>", "", ai_profile)
+            clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
+            st.write(clean_text)
+            st.session_state["ai_job_profile"] = clean_text
+            st.success("✅ AI Job Profile berhasil dihasilkan!")
+
+            # === FIX JSON PARAM ===
+            rpc_payload = {
+                "benchmark_ids": selected_ids,
+                "custom_tgv_list": list(custom_tgv_weights.keys()),  # bukan None
+                "custom_tgv_weights": json.dumps(custom_tgv_weights)  # wajib JSON string
+            }
+
+            st.write("📊 Debug RPC Input:")
+            st.json(rpc_payload)
+
+            with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
+                try:
+                    result = supabase.rpc("talent_match_scoring_v3", rpc_payload).execute()
+
+                    data = result.data
+                    if data:
+                        df_result = pd.DataFrame(data)
+                        rank_df = (
+                            df_result[["employee_id", "fullname", "role", "directorate", "job_level",
+                                       "final_match_rate", "tgv_name"]]
+                            .drop_duplicates()
+                            .sort_values(by="final_match_rate", ascending=False)
+                        )
+                        rank_df.rename(columns={
+                            "employee_id": "Employee ID",
+                            "fullname": "Name",
+                            "role": "Role",
+                            "directorate": "Directorate",
+                            "job_level": "Job Level",
+                            "tgv_name": "Top TGV",
+                            "final_match_rate": "Match Rate",
+                        }, inplace=True)
+                        st.subheader("🏁 Final Match Rate (Benchmark Only)")
+                        st.dataframe(rank_df)
+                        st.bar_chart(rank_df.set_index("Name")["Match Rate"])
+                    else:
+                        st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+                except Exception as e:
+                    st.error(f"Gagal menjalankan Talent Match Scoring: {e}")
+        else:
+            st.warning(ai_profile)
+
+# ==========================================================
+# 🧠 STEP 6: Run Talent Match dengan Custom TV & Weight
+# ==========================================================
+st.markdown("---")
+st.subheader("4️⃣ Run Talent Match (With Custom TV & TGV Weight)")
+
+if st.button("💾 Save & Run Talent Match"):
+    if not selected_ids:
+        st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
+        st.stop()
+
+    rpc_payload = {
+        "benchmark_ids": selected_ids,
+        "custom_tgv_list": list(custom_tgv_weights.keys()),
+        "custom_tgv_weights": json.dumps(custom_tgv_weights)  # ✅ FIX
+    }
+
+    st.write("📊 Debug RPC Input:")
+    st.json(rpc_payload)
+
+    with st.spinner("📊 Menghitung Final Match Rate (Custom TV & TGV Weight)..."):
+        try:
+            result = supabase.rpc("talent_match_scoring_v3", rpc_payload).execute()
+
+            data = result.data
+            if data:
+                df_result = pd.DataFrame(data)
+                rank_df = (
+                    df_result[["employee_id", "fullname", "role", "directorate", "job_level",
+                               "final_match_rate", "tgv_name"]]
+                    .drop_duplicates()
+                    .sort_values(by="final_match_rate", ascending=False)
+                )
+                rank_df.rename(columns={
+                    "employee_id": "Employee ID",
+                    "fullname": "Name",
+                    "role": "Role",
+                    "directorate": "Directorate",
+                    "job_level": "Job Level",
+                    "tgv_name": "Top TGV",
+                    "final_match_rate": "Match Rate",
+                }, inplace=True)
+                st.subheader("🏁 Final Match Rate (Custom TGV Weight)")
+                st.dataframe(rank_df)
+                st.bar_chart(rank_df.set_index("Name")["Match Rate"])
+            else:
+                st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+        except Exception as e:
+            st.error(f"Gagal menjalankan Talent Match: {e}")
+
 
 
 
