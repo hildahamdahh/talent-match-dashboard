@@ -137,6 +137,15 @@ else:
 # 🚀 STEP 3: Generate Job Profile & Variable Score
 # ==========================================================
 st.markdown("---")
+
+# simpan status tombol di session_state
+if "job_generated" not in st.session_state:
+    st.session_state.job_generated = False
+if "df_result" not in st.session_state:
+    st.session_state.df_result = None
+if "top_tgv_df" not in st.session_state:
+    st.session_state.top_tgv_df = None
+
 if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
     if not (selected and len(selected) > 0):
         st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
@@ -145,13 +154,10 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
         try:
             # 🔹 Jalankan function ambil_employee_detail
             result = supabase.rpc("ambil_employee_detail_r3_fix", {"selected_ids": selected_ids}).execute()
-        
-            if result.data:  # ✅ sejajar, sudah benar
+            if result.data:
                 df_result = pd.DataFrame(result.data)
-        
-                # ==========================================================
+                
                 # 🧩 Clean-up & Filter Columns (TGV only)
-                # ==========================================================
                 desired_cols = [
                     "employee_id", "fullname", "position_name", "job_level", "rating",
                     "tgv_name", "category_type",
@@ -160,128 +166,121 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
                 ]
                 available_cols = [c for c in desired_cols if c in df_result.columns]
                 df_result = df_result[available_cols].copy()
-        
-                # Pastikan numeric
+
                 df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
                 df_result["tgv_match_rate"] = pd.to_numeric(df_result["tgv_match_rate"], errors="coerce")
-        
-                # ==========================================================
-                # 🏆 Ranked Talent List (Summary View)
-                # ==========================================================
-                st.markdown("### 🏆 Ranked Talent List")
-        
-                # 🔹 Ambil TGV dengan skor tertinggi per employee
+
                 top_tgv_df = (
                     df_result.sort_values(["employee_id", "tgv_match_rate"], ascending=[True, False])
                     .groupby("employee_id", as_index=False)
                     .first()
                     .loc[:, ["employee_id", "fullname", "position_name", "job_level", "tgv_name", "tgv_match_rate", "final_match_rate"]]
                 )
-        
-                # 🔹 Urutkan berdasarkan final match tertinggi
-                top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
-        
-                # 🔹 Tampilkan tabel ranking
-                st.dataframe(top_tgv_df, use_container_width=True)
-        
-                # ==========================================================
-                # 🔍 Supporting Details (optional)
-                # ==========================================================
-                with st.expander("🔍 Full Supporting Benchmark Details"):
-                    st.dataframe(df_result, use_container_width=True)
-                    
-                # ==========================================================
-                # 🧠 STEP 4: Dashboard Insights & Visualization
-                # ==========================================================
-                st.markdown("---")
-                st.markdown("## 📊 Dashboard Insights & Visualization")
-                
-                # ===============================
-                # 1️⃣ Match-Rate Distribution
-                # ===============================
-                st.markdown("### 📈 Match-Rate Distribution")
-                import plotly.express as px
-                
-                fig_hist = px.histogram(
-                    df_result,
-                    x="final_match_rate",
-                    nbins=10,
-                    title="Distribution of Final Match Rates",
-                    labels={"final_match_rate": "Final Match Rate (%)"},
-                    color_discrete_sequence=["#4C78A8"]
-                )
-                st.plotly_chart(fig_hist, use_container_width=True)
-                # ===============================
-                # 2️⃣ Top Strengths vs Gaps Across TGVs
-                # ===============================
-                st.markdown("### 💪 Top Strengths & 🚧 Gaps Across TGVs")
-                
-                tgv_summary = (
-                    df_result.groupby("tgv_name", as_index=False)
-                    .agg(avg_match_rate=("tgv_match_rate", "mean"))
-                    .sort_values("avg_match_rate", ascending=False)
-                )
-                
-                fig_bar = px.bar(
-                    tgv_summary,
-                    x="tgv_name",
-                    y="avg_match_rate",
-                    title="Average Match Rate by TGV",
-                    color="avg_match_rate",
-                    color_continuous_scale="Blues",
-                    labels={"avg_match_rate": "Avg Match Rate (%)", "tgv_name": "TGV Name"}
-                )
-                st.plotly_chart(fig_bar, use_container_width=True)
 
-                # ===============================
-                # 3️⃣ Benchmark vs Candidate (Radar Chart)
-                # ===============================
-                import plotly.graph_objects as go
-                
-                st.markdown("### 🕸 Benchmark vs Candidate Comparison")
-                
-                selected_emp = st.selectbox(
-                    "Pilih kandidat untuk dibandingkan dengan baseline:",
-                    top_tgv_df["fullname"]
-                )
-                
-                emp_data = df_result[df_result["fullname"] == selected_emp]
-                tgv_list = emp_data["tgv_name"].tolist()
-                emp_score = emp_data["tgv_match_rate"].tolist()
-                baseline_score = [100] * len(tgv_list)  # baseline ideal
-                
-                fig_radar = go.Figure()
-                
-                fig_radar.add_trace(go.Scatterpolar(
-                    r=baseline_score,
-                    theta=tgv_list,
-                    fill='toself',
-                    name='Benchmark (Ideal)',
-                    line=dict(color='lightgray')
-                ))
-                
-                fig_radar.add_trace(go.Scatterpolar(
-                    r=emp_score,
-                    theta=tgv_list,
-                    fill='toself',
-                    name=selected_emp,
-                    line=dict(color='royalblue')
-                ))
-                
-                fig_radar.update_layout(
-                    polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-                    showlegend=True,
-                    title=f"TGV Comparison: {selected_emp} vs Benchmark"
-                )
-                
-                st.plotly_chart(fig_radar, use_container_width=True)
+                top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
+
+                # simpan ke session_state biar gak hilang setelah reload
+                st.session_state.job_generated = True
+                st.session_state.df_result = df_result
+                st.session_state.top_tgv_df = top_tgv_df
 
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
-    
-
         except Exception as e:
             st.error(f"Gagal menjalankan query: {e}")
+
+# ==========================================================
+# 🧠 STEP 4: Dashboard Insights & Visualization
+# ==========================================================
+if st.session_state.job_generated and st.session_state.df_result is not None:
+    df_result = st.session_state.df_result
+    top_tgv_df = st.session_state.top_tgv_df
+
+    st.markdown("---")
+    st.markdown("## 📊 Dashboard Insights & Visualization")
+
+    # ===============================
+    # 🏆 Ranked Talent List
+    # ===============================
+    st.markdown("### 🏆 Ranked Talent List")
+    st.dataframe(top_tgv_df, use_container_width=True)
+
+    # ===============================
+    # 📈 Match-Rate Distribution
+    # ===============================
+    import plotly.express as px
+    st.markdown("### 📈 Match-Rate Distribution")
+
+    fig_hist = px.histogram(
+        df_result,
+        x="final_match_rate",
+        nbins=10,
+        title="Distribution of Final Match Rates",
+        labels={"final_match_rate": "Final Match Rate (%)"},
+        color_discrete_sequence=["#4C78A8"]
+    )
+    st.plotly_chart(fig_hist, use_container_width=True)
+
+    # ===============================
+    # 💪 Top Strengths & Gaps Across TGVs
+    # ===============================
+    st.markdown("### 💪 Top Strengths & 🚧 Gaps Across TGVs")
+
+    tgv_summary = (
+        df_result.groupby("tgv_name", as_index=False)
+        .agg(avg_match_rate=("tgv_match_rate", "mean"))
+        .sort_values("avg_match_rate", ascending=False)
+    )
+
+    fig_bar = px.bar(
+        tgv_summary,
+        x="tgv_name",
+        y="avg_match_rate",
+        title="Average Match Rate by TGV",
+        color="avg_match_rate",
+        color_continuous_scale="Blues",
+        labels={"avg_match_rate": "Avg Match Rate (%)", "tgv_name": "TGV Name"}
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    # ===============================
+    # 🕸 Benchmark vs Candidate (Radar Chart)
+    # ===============================
+    import plotly.graph_objects as go
+    st.markdown("### 🕸 Benchmark vs Candidate Comparison")
+
+    selected_emp = st.selectbox(
+        "Pilih kandidat untuk dibandingkan dengan baseline:",
+        top_tgv_df["fullname"]
+    )
+
+    emp_data = df_result[df_result["fullname"] == selected_emp]
+    tgv_list = emp_data["tgv_name"].tolist()
+    emp_score = emp_data["tgv_match_rate"].tolist()
+    baseline_score = [100] * len(tgv_list)
+
+    fig_radar = go.Figure()
+    fig_radar.add_trace(go.Scatterpolar(
+        r=baseline_score,
+        theta=tgv_list,
+        fill='toself',
+        name='Benchmark (Ideal)',
+        line=dict(color='lightgray')
+    ))
+    fig_radar.add_trace(go.Scatterpolar(
+        r=emp_score,
+        theta=tgv_list,
+        fill='toself',
+        name=selected_emp,
+        line=dict(color='royalblue')
+    ))
+
+    fig_radar.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+        showlegend=True,
+        title=f"TGV Comparison: {selected_emp} vs Benchmark"
+    )
+    st.plotly_chart(fig_radar, use_container_width=True)
 
 
 
