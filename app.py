@@ -211,6 +211,28 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
                     color_discrete_sequence=["#4C78A8"]
                 )
                 st.plotly_chart(fig_hist, use_container_width=True)
+                # ===============================
+                # 2️⃣ Top Strengths vs Gaps Across TGVs
+                # ===============================
+                st.markdown("### 💪 Top Strengths & 🚧 Gaps Across TGVs")
+                
+                tgv_summary = (
+                    df_result.groupby("tgv_name", as_index=False)
+                    .agg(avg_match_rate=("tgv_match_rate", "mean"))
+                    .sort_values("avg_match_rate", ascending=False)
+                )
+                
+                fig_bar = px.bar(
+                    tgv_summary,
+                    x="tgv_name",
+                    y="avg_match_rate",
+                    title="Average Match Rate by TGV",
+                    color="avg_match_rate",
+                    color_continuous_scale="Blues",
+                    labels={"avg_match_rate": "Avg Match Rate (%)", "tgv_name": "TGV Name"}
+                )
+                st.plotly_chart(fig_bar, use_container_width=True)
+
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
     
