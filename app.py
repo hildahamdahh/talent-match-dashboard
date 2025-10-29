@@ -533,7 +533,7 @@ with tab2:
                     "talentmatch_r2_fix",
                     {
                         "benchmark_ids": benchmark_ids,
-                        "custom_tgv_list": json.dumps(custom_tgv_list) if custom_tgv_list else None
+                        "custom_tgv_list": custom_tgv_list
                     }
                 ).execute()
     
