@@ -144,8 +144,10 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
         try:
         
             # Ambil semua employee_id dari tabel (supaya all_employee_ids keisi)
-            response_all = supabase.table("employee_tv_scores").select("employee_id").execute()
+            # Ambil cuma 20 employee random untuk test
+            response_all = supabase.table("employee_tv_scores").select("employee_id").limit(20).execute()
             all_employee_ids = [row["employee_id"] for row in response_all.data]
+
             
             # Panggil function SQL baru (dengan 2 parameter)
             result = supabase.rpc(
