@@ -181,7 +181,7 @@ with tab1:
             except Exception as e:
                 st.error(f"Gagal menjalankan query: {e}")
                 
-    ==========================================================
+   # ==========================================================
     # 🧠 STEP 4: Dashboard Insights & Visualization
     # ==========================================================
     if st.session_state.job_generated and st.session_state.df_result is not None:
