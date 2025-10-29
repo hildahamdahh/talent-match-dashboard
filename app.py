@@ -14,6 +14,12 @@ import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
 import plotly.express as px
+import streamlit as st
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=st.secrets["OPENROUTER_API_KEY"]
+)
 
 # ==========================================================
 # 🔗 KONEKSI SUPABASE
@@ -282,6 +288,40 @@ if st.session_state.job_generated and st.session_state.df_result is not None:
     )
     st.plotly_chart(fig_radar, use_container_width=True)
 
+# ===============================
+# 5️⃣ Summary Insights (AI-based)
+# ===============================
+st.markdown("### 🧠 AI Summary Insights")
+
+if st.button("🪄 Generate AI Summary"):
+    with st.spinner("Menganalisis hasil match-rate dengan AI..."):
+        avg_score = df_result["final_match_rate"].mean()
+        top_name = top_tgv_df.iloc[0]["fullname"]
+        top_score = top_tgv_df.iloc[0]["final_match_rate"]
+        strongest_tgv = tgv_summary.iloc[0]["tgv_name"]
+        weakest_tgv = tgv_summary.iloc[-1]["tgv_name"]
+
+        prompt = f"""
+        Kamu adalah analis HR Data. Berdasarkan hasil scoring berikut:
+        - Rata-rata match rate: {avg_score:.1f}%
+        - Top performer: {top_name} ({top_score:.1f}%)
+        - Kompetensi terkuat: {strongest_tgv}
+        - Kompetensi terlemah: {weakest_tgv}
+
+        Buat ringkasan yang menjelaskan *mengapa kandidat dengan skor tertinggi unggul* dibanding lainnya.
+        Kaitkan dengan kekuatan kompetensinya, dan beri rekomendasi singkat untuk pengembangan talenta.
+        """
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Kamu adalah HR Data Analyst yang menulis insight singkat dan tajam."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        insight_text = response.choices[0].message.content
+        st.success(insight_text)
 
 
 
