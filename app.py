@@ -142,13 +142,12 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
     else:
         selected_ids = [s.split(" - ")[0] for s in selected]
         try:
-        
             # 🔹 Jalankan function ambil_employee_detail
             result = supabase.rpc("ambil_employee_detail_r3_fix", {"selected_ids": selected_ids}).execute()
-
-           if result.data:
+        
+            if result.data:  # ✅ sejajar, sudah benar
                 df_result = pd.DataFrame(result.data)
-            
+        
                 # ==========================================================
                 # 🧩 Clean-up & Filter Columns (TGV only)
                 # ==========================================================
@@ -160,30 +159,30 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
                 ]
                 available_cols = [c for c in desired_cols if c in df_result.columns]
                 df_result = df_result[available_cols].copy()
-            
+        
                 # Pastikan numeric
                 df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
                 df_result["tgv_match_rate"] = pd.to_numeric(df_result["tgv_match_rate"], errors="coerce")
-            
+        
                 # ==========================================================
                 # 🏆 Ranked Talent List (Summary View)
                 # ==========================================================
                 st.markdown("### 🏆 Ranked Talent List")
-            
+        
                 # 🔹 Ambil TGV dengan skor tertinggi per employee
                 top_tgv_df = (
                     df_result.sort_values(["employee_id", "tgv_match_rate"], ascending=[True, False])
                     .groupby("employee_id", as_index=False)
-                    .first()  # ambil baris dengan tgv_match_rate tertinggi per employee
+                    .first()
                     .loc[:, ["employee_id", "fullname", "position_name", "job_level", "tgv_name", "tgv_match_rate", "final_match_rate"]]
                 )
-            
+        
                 # 🔹 Urutkan berdasarkan final match tertinggi
                 top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
-            
+        
                 # 🔹 Tampilkan tabel ranking
                 st.dataframe(top_tgv_df, use_container_width=True)
-            
+        
                 # ==========================================================
                 # 🔍 Supporting Details (optional)
                 # ==========================================================
@@ -191,11 +190,10 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
                     st.dataframe(df_result, use_container_width=True)
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
+    
+    except Exception as e:
+        st.error(f"Gagal menjalankan query: {e}")    
 
-
-
-        except Exception as e:
-            st.error(f"Gagal menjalankan query: {e}")
 
 
 
