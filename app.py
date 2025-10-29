@@ -190,7 +190,7 @@ if st.button("✨ Generate Job Profile & Variable Score"):
             rpc_payload = {
                 "benchmark_ids": selected_ids,
                 "custom_tgv_list": list(custom_tgv_weights.keys()),  # bukan None
-                "custom_tgv_weights": json.dumps(custom_tgv_weights)
+                "custom_tgv_weights": custom_tgv_weights
             }
 
             st.write("📊 Debug RPC Input:")
@@ -242,7 +242,7 @@ if st.button("💾 Save & Run Talent Match"):
     rpc_payload = {
         "benchmark_ids": selected_ids,
         "custom_tgv_list": list(custom_tgv_weights.keys()),
-        "custom_tgv_weights": json.dumps(custom_tgv_weights)  # 
+        "custom_tgv_weights": custom_tgv_weights # 
     }
 
     st.write("📊 Debug RPC Input:")
