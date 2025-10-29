@@ -150,9 +150,9 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
 
                 # 🔹 Urutkan kolom sesuai output final
                 desired_cols = [
-                    "employee_id", "fullname", "position_name", "job_level", "rating",
-                    "tgv_name", "tv_name", "tv_weight", "tgv_weight",
-                    "category_type", "baseline_score", "user_score"
+                    "employee_id", "fullname", "position_name", "job_level",
+                    "tgv_name", "tv_name", "tv_weight", "tgv_weight","baseline_score", "user_score","tv_match_rate","tgv_match_rate",
+                    "final_match_rate","category_type","rating"
                 ]
 
                 available_cols = [c for c in desired_cols if c in df_result.columns]
