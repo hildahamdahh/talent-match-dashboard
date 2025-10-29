@@ -37,7 +37,7 @@ st.markdown(
 
     /* Style Sub Label (smaller text) */
     .sub-label {
-        font-size: 0.9rem;
+        font-size: 1.0rem;
         font-weight: 600;
         color: #333333;
         margin-top: 1.5rem;
