@@ -123,33 +123,6 @@ selected_employees = st.multiselect(
 selected_ids = [emp.split(" - ")[0] for emp in selected_employees]
 
 # ==========================================================
-# 🧩 STEP 3.5: Debug RPC Test (NEW)
-# ==========================================================
-st.markdown("---")
-st.subheader("🧩 Debug: Test RPC Talent Match Connection")
-
-if st.button("🔍 Test RPC Connection"):
-    if not selected_ids:
-        st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
-    else:
-        rpc_payload = {
-            "benchmark_ids": selected_ids,
-            "custom_tgv_list": list(custom_tgv_weights.keys()),
-            "custom_tgv_weights": custom_tgv_weights  # langsung kirim JSON
-        }
-
-        st.subheader("📊 Debug Payload (Before Send)")
-        st.json(rpc_payload)
-
-        with st.spinner("🚀 Testing RPC call..."):
-            try:
-                result = supabase.rpc("talent_match_debug", rpc_payload).execute()
-                st.subheader("🧩 Debug Result (From Supabase)")
-                st.json(result.data)
-            except Exception as e:
-                st.error(f"Gagal menjalankan RPC test: {e}")
-
-# ==========================================================
 # 🧠 STEP 4: AI Job Profile Generator
 # ==========================================================
 def generate_job_profile(role_name, job_level, role_purpose):
@@ -224,7 +197,7 @@ if st.button("✨ Generate Job Profile & Variable Score"):
 
             with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
                 try:
-                    result = supabase.rpc("talent_match_scoring_v3_debug", rpc_payload).execute()
+                    result = supabase.rpc("talent_match_scoring_v3", rpc_payload).execute()
                     data = result.data
                     if data:
                         df_result = pd.DataFrame(data)
@@ -275,7 +248,7 @@ if st.button("💾 Save & Run Talent Match"):
 
     with st.spinner("📊 Menghitung Final Match Rate (Custom TV & TGV Weight)..."):
         try:
-            result = supabase.rpc("talent_match_scoring_v3_debug", rpc_payload).execute()
+            result = supabase.rpc("talent_match_scoring_v3", rpc_payload).execute()
             data = result.data
             if data:
                 df_result = pd.DataFrame(data)
