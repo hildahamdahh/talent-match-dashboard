@@ -331,7 +331,7 @@ with tab1:
 # TAB 2: JOB DETAILS
 # ==========================================================
 with tab2:
-    # Center content of Job Details tab
+    # ====== STYLE: Center Layout + Editable List ======
     st.markdown(
         """
         <style>
@@ -343,21 +343,35 @@ with tab2:
             text-align: center;
         }
         .job-details-box {
-            width: 70%; /* kamu bisa ubah ke 60%, 80%, dll */
+            width: 70%;
             text-align: left;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .item-text { font-size: 0.95rem; }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-    # Mulai container tengah
+    # ====== CONTAINER ======
     st.markdown('<div class="job-details-container"><div class="job-details-box">', unsafe_allow_html=True)
 
     st.subheader("3️⃣ Job Details (AI Suggestions + Editable Lists)")
     st.caption("Tambahkan atau hapus sesuai kebutuhan. AI akan regenerate otomatis jika role berubah.")
 
-    # --- Function to Generate AI Job Details ---
+    # ====== Helper: Generate AI Job Details ======
     def generate_job_details(role_name, job_level):
         try:
             OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
@@ -415,7 +429,7 @@ with tab2:
             st.text(content)
             return None
 
-    # --- Generate AI Details ---
+    # ====== Generate AI Details (Hanya Sekali) ======
     if (
         "job_details_ai" not in st.session_state
         or st.session_state.get("last_role") != selected_role
@@ -432,32 +446,54 @@ with tab2:
 
     ai_details = st.session_state["job_details_ai"]
 
-    if "selected_responsibilities" not in st.session_state:
-        st.session_state["selected_responsibilities"] = []
-    if "selected_competencies" not in st.session_state:
-        st.session_state["selected_competencies"] = []
+    # ====== Initialize Session States ======
+    st.session_state.setdefault("selected_responsibilities", [])
+    st.session_state.setdefault("selected_competencies", [])
 
+    # ====== Helper Function: Render Section ======
     def render_detail_section(title, key, ai_options):
         st.markdown(f"#### {title}")
+
         cols = st.columns([6, 1])
         with cols[0]:
-            selected = st.selectbox(f"Select {title}", options=[""] + ai_options, key=f"select_{key}", label_visibility="collapsed")
+            selected = st.selectbox(
+                f"Select {title}",
+                options=[""] + ai_options,
+                key=f"select_{key}",
+                label_visibility="collapsed"
+            )
         with cols[1]:
             if st.button("➕ Add", key=f"add_{key}"):
                 if selected and selected not in st.session_state[key]:
                     st.session_state[key].append(selected)
-                    st.rerun()
 
+        # Show existing items with edit/delete icons
         for i, item in enumerate(st.session_state[key]):
-            st.markdown(f"- {item}")
+            col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
+            with col1:
+                st.markdown(f"• {item}")
+            with col2:
+                if st.button("✏️", key=f"edit_{key}_{i}"):
+                    new_val = st.text_input(f"Edit {item}", value=item, key=f"edit_input_{key}_{i}")
+                    if new_val and new_val != item:
+                        st.session_state[key][i] = new_val
+                        st.experimental_rerun()
+            with col3:
+                if st.button("❌", key=f"del_{key}_{i}"):
+                    st.session_state[key].pop(i)
+                    st.experimental_rerun()
 
+    # ====== Render Both Sections ======
     st.markdown("---")
     render_detail_section("Key Responsibilities", "selected_responsibilities", ai_details["responsibilities"])
+    st.markdown("---")
     render_detail_section("Key Competencies", "selected_competencies", ai_details["competencies"])
 
     st.markdown("---")
     st.button("💾 Save & Run Talent Match", type="primary")
 
+    # Close center container
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
 
 
