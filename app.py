@@ -41,17 +41,7 @@ st.title("🎯 Talent Match Intelligence Dashboard")
 # ==========================================================
 # 🧭 TAB SETUP
 # ==========================================================
-# Center the tab labels
-st.markdown(
-    """
-    <style>
-    div[data-baseweb="tab-list"] {
-        justify-content: center;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+
 tab1, tab2 = st.tabs(["🧩 Role Information", "🧠 Job Details"])
 
 # ==========================================================
@@ -341,7 +331,31 @@ with tab1:
 # TAB 2: JOB DETAILS
 # ==========================================================
 with tab2:
-    st.markdown("## 🧠 Job Details (AI-Based Responsibilities & Competencies)")
+    # Center content of Job Details tab
+    st.markdown(
+        """
+        <style>
+        .job-details-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: center;
+        }
+        .job-details-box {
+            width: 70%; /* kamu bisa ubah ke 60%, 80%, dll */
+            text-align: left;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Mulai container tengah
+    st.markdown('<div class="job-details-container"><div class="job-details-box">', unsafe_allow_html=True)
+
+    st.subheader("3️⃣ Job Details (AI Suggestions + Editable Lists)")
+    st.caption("Tambahkan atau hapus sesuai kebutuhan. AI akan regenerate otomatis jika role berubah.")
 
     # --- Function to Generate AI Job Details ---
     def generate_job_details(role_name, job_level):
