@@ -224,7 +224,7 @@ if st.button("✨ Generate Job Profile & Variable Score"):
 
             with st.spinner("📊 Menghitung Final Match Rate (Benchmark Only)..."):
                 try:
-                    result = supabase.rpc("talent_match_scoring_v3", rpc_payload).execute()
+                    result = supabase.rpc("talent_match_scoring_v3_debug", rpc_payload).execute()
                     data = result.data
                     if data:
                         df_result = pd.DataFrame(data)
@@ -275,7 +275,7 @@ if st.button("💾 Save & Run Talent Match"):
 
     with st.spinner("📊 Menghitung Final Match Rate (Custom TV & TGV Weight)..."):
         try:
-            result = supabase.rpc("talent_match_scoring_v3", rpc_payload).execute()
+            result = supabase.rpc("talent_match_scoring_v3_debug", rpc_payload).execute()
             data = result.data
             if data:
                 df_result = pd.DataFrame(data)
