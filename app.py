@@ -148,25 +148,50 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
 
             if result.data:
                 df_result = pd.DataFrame(result.data)
-
-                # 🔹 Urutkan kolom sesuai output final
+            
+                # ==========================================================
+                # 🧩 Clean-up & Filter Columns (TGV only)
+                # ==========================================================
                 desired_cols = [
                     "employee_id", "fullname", "position_name", "job_level", "rating",
-                    "tgv_name", "tv_name", "category_type",
-                    "baseline_score",
-                    "tv_weight", "tgv_weight","user_score","tv_match_rate","tgv_match_rate","final_match_rate"
+                    "tgv_name", "category_type",
+                    "baseline_score", "tgv_weight", "user_score",
+                    "tgv_match_rate", "final_match_rate"
                 ]
-
-
                 available_cols = [c for c in desired_cols if c in df_result.columns]
-                df_result = df_result[available_cols]
-
-                # 🔹 Tampilkan hasil di Streamlit
-                st.subheader("🏁 Hasil Benchmarking (TV & TGV Baseline)")
-                st.dataframe(df_result, use_container_width=True)
-
+                df_result = df_result[available_cols].drop_duplicates(subset=["employee_id", "tgv_name"])
+            
+                # Pastikan numeric
+                df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
+                df_result["tgv_match_rate"] = pd.to_numeric(df_result["tgv_match_rate"], errors="coerce")
+            
+                # ==========================================================
+                # 🏆 Ranked Talent List (Summary View)
+                # ==========================================================
+                st.markdown("### 🏆 Ranked Talent List")
+            
+                # Ambil TGV dengan skor tertinggi per employee
+                top_tgv_df = (
+                    df_result.sort_values(["employee_id", "tgv_match_rate"], ascending=[True, False])
+                    .drop_duplicates(subset=["employee_id"])
+                    .loc[:, ["employee_id", "fullname", "position_name", "job_level", "final_match_rate", "tgv_name"]]
+                )
+            
+                # Urutkan berdasarkan final match tertinggi
+                top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
+            
+                # Tampilkan tabel ranking
+                st.dataframe(top_tgv_df, use_container_width=True)
+            
+                # ==========================================================
+                # 🔍 Supporting Details (optional)
+                # ==========================================================
+                with st.expander("🔍 Full Supporting Benchmark Details"):
+                    st.dataframe(df_result, use_container_width=True)
+            
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
+
 
         except Exception as e:
             st.error(f"Gagal menjalankan query: {e}")
