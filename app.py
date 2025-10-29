@@ -498,8 +498,6 @@ with tab2:
     st.markdown("---")
     render_detail_section("Key Competencies", "selected_competencies", ai_details["competencies"])
 
-    st.markdown("---")
-    st.button("💾 Save & Run Talent Match", type="primary")
 
     # Close center container
     st.markdown("</div></div>", unsafe_allow_html=True)
