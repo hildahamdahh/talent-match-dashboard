@@ -118,13 +118,14 @@ if st.button("💾 Save & Run Talent Match", use_container_width=True):
         st.error("Please select at least one benchmark employee.")
     else:
         with st.spinner("Running final match computation..."):
+        
             result = supabase.rpc(
                 "talent_match_scoring_v3",
                 {
                     "benchmark_ids": selected_ids,
-                    "custom_tgv_list": custom_tv_list,
-                    "custom_tgv_weights": custom_tgv_weights,
-                    "employee_id": None  # ✅ FIX ARGUMENT 4
+                    "custom_tgv_list": json.dumps(custom_tv_list) if custom_tv_list else None,
+                    "custom_tgv_weights": json.dumps(custom_tgv_weights),
+                    "employee_id": None
                 }
             ).execute()
 
