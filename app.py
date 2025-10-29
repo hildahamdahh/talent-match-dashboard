@@ -217,6 +217,12 @@ if st.session_state.job_generated and st.session_state.df_result is not None:
     st.markdown("### 🏆 Ranked Talent List")
     st.dataframe(top_tgv_df, use_container_width=True)
 
+    # ==========================================================
+    # 🔍 Supporting Details (optional)
+    # ==========================================================
+    with st.expander("🔍 Full Supporting Benchmark Details"):
+        st.dataframe(df_result, use_container_width=True, height=600)
+
     # ===============================
     # 📈 Match-Rate Distribution
     # ===============================
