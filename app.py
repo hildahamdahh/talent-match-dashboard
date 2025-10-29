@@ -14,7 +14,13 @@ import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
 import plotly.express as px
+from openai import OpenAI
 import streamlit as st
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=st.secrets["OPENROUTER_API_KEY"]
+)
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
