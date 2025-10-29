@@ -233,6 +233,49 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
                 )
                 st.plotly_chart(fig_bar, use_container_width=True)
 
+                # ===============================
+                # 3️⃣ Benchmark vs Candidate (Radar Chart)
+                # ===============================
+                import plotly.graph_objects as go
+                
+                st.markdown("### 🕸 Benchmark vs Candidate Comparison")
+                
+                selected_emp = st.selectbox(
+                    "Pilih kandidat untuk dibandingkan dengan baseline:",
+                    top_tgv_df["fullname"]
+                )
+                
+                emp_data = df_result[df_result["fullname"] == selected_emp]
+                tgv_list = emp_data["tgv_name"].tolist()
+                emp_score = emp_data["tgv_match_rate"].tolist()
+                baseline_score = [100] * len(tgv_list)  # baseline ideal
+                
+                fig_radar = go.Figure()
+                
+                fig_radar.add_trace(go.Scatterpolar(
+                    r=baseline_score,
+                    theta=tgv_list,
+                    fill='toself',
+                    name='Benchmark (Ideal)',
+                    line=dict(color='lightgray')
+                ))
+                
+                fig_radar.add_trace(go.Scatterpolar(
+                    r=emp_score,
+                    theta=tgv_list,
+                    fill='toself',
+                    name=selected_emp,
+                    line=dict(color='royalblue')
+                ))
+                
+                fig_radar.update_layout(
+                    polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                    showlegend=True,
+                    title=f"TGV Comparison: {selected_emp} vs Benchmark"
+                )
+                
+                st.plotly_chart(fig_radar, use_container_width=True)
+
             else:
                 st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
     
