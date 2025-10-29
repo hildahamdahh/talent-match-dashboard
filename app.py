@@ -27,7 +27,9 @@ st.title("🎯 Talent Match Intelligence Dashboard (Simplified)")
 # 🧩 STEP 1: Ambil Semua Employee
 # ==========================================================
 try:
-    response = supabase.table("employee_tv_scores").select("employee_id, fullname").execute()
+    response = supabase.table("employee_tv_scores").select(
+    "employee_id, fullname"
+).eq("rating", 5).execute()
     data = response.data
 except Exception as e:
     st.error(f"Gagal mengambil data: {e}")
