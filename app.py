@@ -144,7 +144,7 @@ if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
         try:
         
             # 🔹 Jalankan function ambil_employee_detail
-            result = supabase.rpc("talent_match_R02", {"selected_ids": selected_ids}).execute()
+            result = supabase.rpc("talent_match_r03", {"selected_ids": selected_ids}).execute()
 
             if result.data:
                 df_result = pd.DataFrame(result.data)
