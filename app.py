@@ -740,12 +740,6 @@ with tab2:
                     }
                 ).execute()
 
-                # --- (jika perlu debug) print values yang dikirim ---
-                st.write("DEBUG: selected_ids_clean:", selected_ids_clean)
-                st.write("DEBUG: custom_tgv_list:", custom_tgv_list)
-                st.write("DEBUG: custom_tgv_weight:", custom_tgv_dict)
-                st.write("DEBUG: RPC Response →", response.data)
-
     
                 if response.data:
                     df_result = pd.DataFrame(response.data)
