@@ -324,7 +324,7 @@ with tab1:
         # ===============================
         # Ranked Talent List
         # ===============================
-        st.markdown("### 🏆 Ranked Talent List")
+        st.markdown("### Ranked Talent List")
         st.dataframe(top_tgv_df, use_container_width=True)
     
         # ==========================================================
@@ -334,10 +334,10 @@ with tab1:
             st.dataframe(df_result, use_container_width=True, height=600)
     
         # ===============================
-        # 📈 Match-Rate Distribution
+        # Match-Rate Distribution
         # ===============================
         import plotly.express as px
-        st.markdown("### 📈 Match-Rate Distribution")
+        st.markdown("### Match-Rate Distribution")
     
         fig_hist = px.histogram(
             df_result,
@@ -372,10 +372,10 @@ with tab1:
         st.plotly_chart(fig_bar, use_container_width=True)
     
         # ===============================
-        # 🕸 Benchmark vs Candidate (Radar Chart)
+        # Benchmark vs Candidate (Radar Chart)
         # ===============================
         import plotly.graph_objects as go
-        st.markdown("### 🕸 Benchmark vs Candidate Comparison")
+        st.markdown("### Benchmark vs Candidate Comparison")
     
         selected_emp = st.selectbox(
             "Pilih kandidat untuk dibandingkan dengan baseline:",
@@ -411,9 +411,9 @@ with tab1:
         st.plotly_chart(fig_radar, use_container_width=True)
     
         # ===============================
-        # 5️⃣ AI Summary Insights (Auto Generate)
+        # AI Summary Insights (Auto Generate)
         # ===============================
-        st.markdown("### 🧠 AI Summary Insights")
+        st.markdown("### AI Summary Insights")
     
         try:
             from openai import OpenAI
@@ -756,8 +756,8 @@ with tab2:
                     df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
                     df_result["tgv_match_rate"] = pd.to_numeric(df_result["tgv_match_rate"], errors="coerce")
     
-                    # 🏆 Ranked Talent List
-                    st.markdown("### 🏆 Ranked Talent List")
+                    #  Ranked Talent List
+                    st.markdown("### Ranked Talent List")
                     top_tgv_df = (
                         df_result.sort_values(["employee_id", "tgv_match_rate"], ascending=[True, False])
                         .groupby("employee_id", as_index=False)
@@ -767,9 +767,9 @@ with tab2:
                     top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
                     st.dataframe(top_tgv_df, use_container_width=True)
     
-                    # 📈 Match-Rate Distribution
+                    # Match-Rate Distribution
                     import plotly.express as px
-                    st.markdown("### 📈 Match-Rate Distribution")
+                    st.markdown("### Match-Rate Distribution")
                     fig_hist = px.histogram(
                         df_result,
                         x="final_match_rate",
@@ -780,8 +780,8 @@ with tab2:
                     )
                     st.plotly_chart(fig_hist, use_container_width=True)
     
-                    # 💪 Top Strengths & Gaps Across TGVs
-                    st.markdown("### 💪 Top Strengths & 🚧 Gaps Across TGVs")
+                    # Top Strengths & Gaps Across TGVs
+                    st.markdown("### Top Strengths & Gaps Across TGVs")
                     tgv_summary = (
                         df_result.groupby("tgv_name", as_index=False)
                         .agg(avg_match_rate=("tgv_match_rate", "mean"))
@@ -798,9 +798,9 @@ with tab2:
                     )
                     st.plotly_chart(fig_bar, use_container_width=True)
     
-                    # 🕸 Benchmark vs Candidate (Radar Chart)
+                    # Benchmark vs Candidate (Radar Chart)
                     import plotly.graph_objects as go
-                    st.markdown("### 🕸 Benchmark vs Candidate Comparison")
+                    st.markdown("### Benchmark vs Candidate Comparison")
                     selected_emp = st.selectbox(
                         "Pilih kandidat untuk dibandingkan dengan baseline:",
                         top_tgv_df["fullname"]
@@ -832,8 +832,8 @@ with tab2:
                     )
                     st.plotly_chart(fig_radar, use_container_width=True)
     
-                    # 🧠 AI Summary Insights
-                    st.markdown("### 🧠 AI Summary Insights")
+                    # AI Summary Insights
+                    st.markdown("### AI Summary Insights")
                     try:
                         from openai import OpenAI
                         import os
@@ -843,7 +843,7 @@ with tab2:
                             api_key=os.getenv("OPENROUTER_API_KEY")
                         )
     
-                        with st.spinner("🧩 Menganalisis hasil match-rate dengan AI..."):
+                        with st.spinner("Menganalisis hasil match-rate dengan AI..."):
                             avg_score = df_result["final_match_rate"].mean()
                             top_name = top_tgv_df.iloc[0]["fullname"]
                             top_score = top_tgv_df.iloc[0]["final_match_rate"]
