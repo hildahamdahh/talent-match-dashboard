@@ -655,7 +655,8 @@ with tab2:
                     st.warning("⚠️ Pilih minimal 1 benchmark employee di tab Role Information terlebih dahulu.")
                     st.stop()
     
-                selected_ids = [s.split(" - ")[0] for s in sel]
+                selected_ids = [s.split(" - ")[0] for s in st.session_state["benchmark_selected"]]
+
     
                 # 1️⃣ Save Job Details
                 ai_data = st.session_state.get("job_details_ai", {})
