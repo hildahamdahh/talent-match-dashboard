@@ -644,55 +644,55 @@ with tab2:
         return {"tgv_name": mapped_tgv}
 
 
-        # ==========================================================
-        # 💾 SAVE & RUN TALENT MATCH
-        # ==========================================================
-        if st.button("💾 Save & Run Talent Match", key="run_talent_match"):
-            with st.spinner("Running Talent Match analysis..."):
-                try:
-                    sel = st.session_state.get("benchmark_selected", [])
-                    if not sel:
-                        st.warning("⚠️ Pilih minimal 1 benchmark employee di tab Role Information terlebih dahulu.")
-                        st.stop()
-    
-                    selected_ids = [s.split(" - ")[0] for s in sel]
-    
-                    # 1️⃣ Save Job Details
-                    ai_data = st.session_state.get("job_details_ai", {})
-                    data_insert = {
-                        "role_name": selected_role,
-                        "job_level": selected_job_level,
-                        "responsibilities": st.session_state["selected_responsibilities"],
-                        "competencies": st.session_state["selected_competencies"],
-                        "created_at": datetime.now().isoformat()
+    # ==========================================================
+    # 💾 SAVE & RUN TALENT MATCH
+    # ==========================================================
+    if st.button("💾 Save & Run Talent Match", key="run_talent_match"):
+        with st.spinner("Running Talent Match analysis..."):
+            try:
+                sel = st.session_state.get("benchmark_selected", [])
+                if not sel:
+                    st.warning("⚠️ Pilih minimal 1 benchmark employee di tab Role Information terlebih dahulu.")
+                    st.stop()
+
+                selected_ids = [s.split(" - ")[0] for s in sel]
+
+                # 1️⃣ Save Job Details
+                ai_data = st.session_state.get("job_details_ai", {})
+                data_insert = {
+                    "role_name": selected_role,
+                    "job_level": selected_job_level,
+                    "responsibilities": st.session_state["selected_responsibilities"],
+                    "competencies": st.session_state["selected_competencies"],
+                    "created_at": datetime.now().isoformat()
+                }
+                supabase.table("job_details").insert(data_insert).execute()
+
+                # 2️⃣ Mapping to TGV
+                mapping_result = map_job_details_to_tgv(
+                    st.session_state["selected_responsibilities"],
+                    st.session_state["selected_competencies"]
+                )
+                custom_tgv_list = mapping_result.get("tgv_name", [])
+                st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
+
+                # 3️⃣ Run SQL Function
+                response = supabase.rpc(
+                    "talentmatch_r3_fix",
+                    {
+                        "selected_ids": selected_ids,
+                        "custom_tgv_list": custom_tgv_list
                     }
-                    supabase.table("job_details").insert(data_insert).execute()
-    
-                    # 2️⃣ Mapping to TGV
-                    mapping_result = map_job_details_to_tgv(
-                        st.session_state["selected_responsibilities"],
-                        st.session_state["selected_competencies"]
-                    )
-                    custom_tgv_list = mapping_result.get("tgv_name", [])
-                    st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
-    
-                    # 3️⃣ Run SQL Function
-                    response = supabase.rpc(
-                        "talentmatch_r3_fix",
-                        {
-                            "selected_ids": selected_ids,
-                            "custom_tgv_list": custom_tgv_list
-                        }
-                    ).execute()
-    
-                    if response.data:
-                        df_result = pd.DataFrame(response.data)
-                        st.success("✅ Talent Match analysis completed!")
-                        st.dataframe(df_result, use_container_width=True)
-                    else:
-                        st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
-                except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
+                ).execute()
+
+                if response.data:
+                    df_result = pd.DataFrame(response.data)
+                    st.success("✅ Talent Match analysis completed!")
+                    st.dataframe(df_result, use_container_width=True)
+                else:
+                    st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
             
 
 
