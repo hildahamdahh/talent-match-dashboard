@@ -558,7 +558,7 @@ with tab2:
                 response = supabase.rpc(
                     "talentmatch_r3_fix",
                     {
-                        "benchmark_ids": benchmark_ids,
+                        "selected_ids": selected_ids,
                         "custom_tgv_list": custom_tgv_list
                     }
                 ).execute()
