@@ -1,0 +1,54 @@
+tv_name,tgv_name,category_baseline,domain,% or correlation to top,tgv_weight
+pauli,Motivation & Drive,Numeric,cognitive/numeric,0.044,0.2
+Extraversion,Leadership & Influence,Category,MBTI,8.474576,0.3
+Introversion,Leadership & Influence,Category,MBTI,8.255159,0.3
+Intuition,Creativity & Innovation Orientation,Category,MBTI,7.883082,0.02
+Dominance,Leadership & Influence,Category,DISC,8.73494,0.3
+Influence,Social Orientation & Collaboration,Category,DISC,8.350101,0.05
+Steadiness,Adaptability & Stress Tolerance,Category,DISC,8.753862,0.06
+Compliance,Conscientiousness & Reliability,Category,DISC,7.648725,0.1
+gtq,Cognitive Complexity & Problem-Solving,Numeric,cognitive/numeric,0.033,0.25
+tiki,Cognitive Complexity & Problem-Solving,Numeric,cognitive/numeric,-0.005,0.25
+faxtor,Cognitive Complexity & Problem-Solving,Numeric,cognitive/numeric,-0.03,0.25
+iq,Cognitive Complexity & Problem-Solving,Numeric,cognitive/numeric,-0.006,0.25
+Papi_A,Motivation & Drive,Numeric,PAPI,-0.227274,0.2
+Papi_L,Leadership & Influence,Numeric,PAPI,-0.101474,0.3
+Papi_P,Leadership & Influence,Numeric,PAPI,0.383129,0.3
+Papi_I,Cognitive Complexity & Problem-Solving,Numeric,PAPI,0.097493,0.25
+Papi_T,Adaptability & Stress Tolerance,Numeric,PAPI,-0.275116,0.06
+Papi_S,Social Orientation & Collaboration,Numeric,PAPI,-0.344167,0.05
+Papi_C,Conscientiousness & Reliability,Numeric,PAPI,-0.181885,0.1
+Papi_D,Conscientiousness & Reliability,Numeric,PAPI,-0.15504,0.1
+Papi_Z,Creativity & Innovation Orientation,Numeric,PAPI,0.07735,0.02
+Papi_E,Adaptability & Stress Tolerance,Numeric,PAPI,0.082384,0.06
+Achiever,Motivation & Drive,Category,Strengths,8.21,0.2
+Arranger,Leadership & Influence,Category,Strengths,8.43,0.3
+Belief,Cultural & Values Urgency,Category,Strengths,8.26,0.02
+Deliberative,Conscientiousness & Reliability,Category,Strengths,8.59,0.1
+Discipline,Conscientiousness & Reliability,Category,Strengths,7.81,0.1
+Command,Leadership & Influence,Category,Strengths,7.47,0.3
+Communication,Social Orientation & Collaboration,Category,Strengths,8.75,0.05
+Self-Assurance,Leadership & Influence,Category,Strengths,8.54,0.3
+Woo,Social Orientation & Collaboration,Category,Strengths,8.34,0.05
+Adaptability,Adaptability & Stress Tolerance,Category,Strengths,7.9,0.06
+Connectedness,Cognitive Complexity & Problem-Solving,Category,Strengths,8.75,0.25
+Developer,Leadership & Influence,Category,Strengths,9.08,0.3
+Relator,Social Orientation & Collaboration,Category,Strengths,8.64,0.05
+Analytical,Cognitive Complexity & Problem-Solving,Category,Strengths,8.91,0.25
+Futuristic,Creativity & Innovation Orientation,Category,Strengths,10.08,0.02
+Ideation,Creativity & Innovation Orientation,Category,Strengths,6.83,0.02
+Strategic,Cognitive Complexity & Problem-Solving,Category,Strengths,8.54,0.25
+Forward Thinking & Clarity,Cognitive Complexity & Problem-Solving,Numeric,Competency,10.48,0.25
+Insight & Decision Sharpness,Cognitive Complexity & Problem-Solving,Numeric,Competency,6.95,0.25
+Quality Delivery Discipline,Conscientiousness & Reliability,Numeric,Competency,4.03,0.1
+Curiosity & Experimentation,Creativity & Innovation Orientation,Numeric,Competency,7.41,0.02
+Value Creation for Users,Cultural & Values Urgency,Numeric,Competency,21.9,0.02
+"Lead, Inspire & Empower",Leadership & Influence,Numeric,Competency,42.39,0.3
+Commercial Savvy & Impact,Motivation & Drive,Numeric,Competency,17.26,0.2
+Growth Drive & Resilience,Motivation & Drive,Numeric,Competency,2.35,0.2
+Synergy & Team Orientation,Social Orientation & Collaboration,Numeric,Competency,36.79,0.05
+Social Empathy & Awareness,Social Orientation & Collaboration,Numeric,Competency,41.55,0.05
+Major,Cognitive Complexity & Problem-Solving,Category,Contextual,0.25,0.06
+Grade,Conscientiousness & Reliability,Category,Contextual,0.1,0.033
+Education,Cultural & Values Urgency,Category,Contextual,0.02,0.07
+years_of_service_months,Motivation & Drive,Numeric,Contextual,0.2,0.04
