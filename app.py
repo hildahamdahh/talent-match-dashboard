@@ -266,7 +266,15 @@ with tab1:
             with st.spinner("📊 Menghitung Variable Score..."):
                 selected_ids = [s.split(" - ")[0] for s in selected]
                 try:
-                    result = supabase.rpc("talentmatch_r3_fix", {"selected_ids": selected_ids}).execute()
+                    
+                    result = supabase.rpc(
+                            "talentmatch_r4_fix",
+                            {
+                                "selected_ids": selected_ids,
+                                "custom_tgv_list": custom_tgv_list,
+                                "custom_tgv_weight": custom_tgv_weight  # dikirim sebagai JSONB
+                            }).execute()
+                    
                     if result.data:
                         df_result = pd.DataFrame(result.data)
                         desired_cols = [
@@ -666,10 +674,11 @@ with tab2:
 
                 # 3️⃣ Run SQL Function
                 response = supabase.rpc(
-                    "talentmatch_r3_fix",
+                    "talentmatch_r4_fix",
                     {
                         "selected_ids": selected_ids,
-                        "custom_tgv_list": custom_tgv_list
+                        "custom_tgv_list": custom_tgv_list,
+                        "custom_tgv_weight": custom_tgv_weight  # dikirim sebagai JSONB
                     }
                 ).execute()
 
