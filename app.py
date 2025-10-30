@@ -144,7 +144,7 @@ with tab1:
     # ⚖️ Custom TGV Weight Adjustment
     # ==========================================================
     st.markdown("### ⚖️ Custom TGV Weight Adjustment")
-    st.caption("Atur bobot kompetensi (TGV) sesuai kebutuhan posisi. Total harus = 1.00")
+    st.caption("Atur bobot kompetensi (TGV) sesuai kebutuhan posisi. Yang tampil merupakan tgv weight default. Jika tidak mengubah akan dikalkulasikan dengan tgv weight default. Total harus = 1.00")
     
     default_weights = {
         "Adaptability & Stress Tolerance": 0.06,
