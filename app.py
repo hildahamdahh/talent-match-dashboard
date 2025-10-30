@@ -677,6 +677,10 @@ with tab2:
                 custom_tgv_list = mapping_result.get("tgv_name", [])
                 st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
 
+                st.write("🧠 DEBUG: Mapping result raw:", mapping_result)
+                st.write("🧩 DEBUG: Custom TGV List:", custom_tgv_list)
+
+
                 # ✅ Simpan hasil ke session_state (biar kebaca di RPC)
                 st.session_state["custom_tgv_list"] = custom_tgv_list
 
