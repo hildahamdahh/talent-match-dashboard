@@ -622,28 +622,75 @@ with tab2:
     st.markdown("</div></div>", unsafe_allow_html=True)
 
     # ====== Helper: Mapping AI → TGV Domain ======
+    # ✅ BENAR — versi AI (bukan manual mapping)
     def map_job_details_to_tgv(responsibilities, competencies):
-        tgv_mapping = {
-            "Leadership": "Leadership & Influence",
-            "Team": "Social Orientation & Collaboration",
-            "Creative": "Creativity & Innovation Orientation",
-            "Adapt": "Adaptability & Stress Tolerance",
-            "Problem": "Cognitive Complexity & Problem-Solving",
-            "Motivat": "Motivation & Drive",
-            "Reliable": "Conscientiousness & Reliability",
-            "Culture": "Cultural & Values Urgency",
+        try:
+            OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+        except Exception:
+            st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+            return None
+    
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+            "X-Title": "Talent Match Intelligence",
+            "Content-Type": "application/json",
         }
-
-        mapped_tgv = []
-        for c in competencies:
-            for keyword, tgv in tgv_mapping.items():
-                if keyword.lower() in c.lower():
-                    mapped_tgv.append(tgv)
-
-        mapped_tgv = list(set(mapped_tgv)) if mapped_tgv else competencies
-        return {"tgv_name": mapped_tgv}
-
-
+    
+        prompt = f"""
+        You are an HR data-mapping assistant.
+        Map the following job details into internal competency *domains* (tgv_name)
+        used in the Talent Match Intelligence system.
+    
+        Responsibilities:
+        {responsibilities}
+    
+        Competencies:
+        {competencies}
+    
+        Choose only from this list of valid TGV names:
+        - Adaptability & Stress Tolerance
+        - Cognitive Complexity & Problem-Solving
+        - Conscientiousness & Reliability
+        - Creativity & Innovation Orientation
+        - Cultural & Values Urgency
+        - Leadership & Influence
+        - Motivation & Drive
+        - Social Orientation & Collaboration
+    
+        Return only JSON with one array:
+        {{
+          "tgv_name": ["Leadership & Influence", "Motivation & Drive"]
+        }}
+        """
+    
+        payload = {
+            "model": "openai/gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You map HR job details to internal competency domains."},
+                {"role": "user", "content": prompt}
+            ]
+        }
+    
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(payload)
+        )
+    
+        if response.status_code == 200:
+            try:
+                content = response.json()["choices"][0]["message"]["content"]
+                clean_json = re.sub(r"```json|```", "", content).strip()
+                return json.loads(clean_json)
+            except Exception as e:
+                st.error(f"⚠️ Gagal parsing hasil mapping: {e}")
+                st.text(content)
+                return None
+        else:
+            st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
+            return None
+    
     # ==========================================================
     # 💾 SAVE & RUN TALENT MATCH
     # ==========================================================
