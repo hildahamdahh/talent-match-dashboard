@@ -55,7 +55,7 @@ The employee_tv_scores table is used for benchmark calculation (top performers),
 ### 4. AI Integration (OpenRouter)
 The dashboard uses OpenRouter API to generate AI-powered insights and explanations.  
 To enable this feature:  
-a. Create an account on OpenRouter.ai.  
+a. Create an account on (https://openrouter.ai/)
 b. Generate an API key from your profile settings.  
 c. In Streamlit Cloud, go to App Settings → Secrets, and add:  
 ```
