@@ -140,7 +140,45 @@ with tab1:
     if selected is not None:
         st.session_state["benchmark_selected"] = selected
 
-
+    # ==========================================================
+    # ⚖️ Custom TGV Weight Adjustment
+    # ==========================================================
+    st.markdown("### ⚖️ Custom TGV Weight Adjustment")
+    st.caption("Atur bobot kompetensi (TGV) sesuai kebutuhan posisi. Total harus = 1.00")
+    
+    default_weights = {
+        "Adaptability & Stress Tolerance": 0.06,
+        "Cognitive Complexity & Problem-Solving": 0.25,
+        "Conscientiousness & Reliability": 0.10,
+        "Creativity & Innovation Orientation": 0.02,
+        "Cultural & Values Urgency": 0.02,
+        "Leadership & Influence": 0.30,
+        "Motivation & Drive": 0.20,
+        "Social Orientation & Collaboration": 0.05
+    }
+    
+    custom_tgv_dict = {}
+    total_weight = 0
+    
+    cols = st.columns(4)
+    for i, (tgv, default_val) in enumerate(default_weights.items()):
+        with cols[i % 4]:
+            weight = st.slider(
+                tgv,
+                min_value=0.00,
+                max_value=0.50,
+                step=0.01,
+                value=default_val,
+                key=f"tgv_{i}"
+            )
+            custom_tgv_dict[tgv] = weight
+            total_weight += weight
+    
+    st.markdown(f"**Total Weight = {total_weight:.2f}**")
+    
+    if abs(total_weight - 1.0) > 0.01:
+        st.warning("⚠️ Total weight sebaiknya mendekati 1.00 agar proporsional.")
+    
     # ==========================================================
     # 🚀 Generate Job Profile & Variable Score
     # ==========================================================
