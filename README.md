@@ -24,13 +24,13 @@ This repository contains all main source files used to build the **Talent Match 
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/your-username/talent-match-intelligence.git
-cd talent-match-intelligence```
+cd talent-match-intelligence
 
 ### 2. Create a Virtual Environment
 ```bash
-python3 -m venv venv
+git clone python3 -m venv venv
 source venv/bin/activate   # For Mac/Linux
-venv\Scripts\activate      # For Windows```
+venv\Scripts\activate      # For Windows
 
 ### 3. Install Dependencies
 pip install -r requirements.txt
