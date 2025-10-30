@@ -702,7 +702,7 @@ with tab2:
                     st.warning("⚠️ Pilih minimal 1 benchmark employee di tab Role Information terlebih dahulu.")
                     st.stop()
     
-                selected_ids = [s.split(" - ")[0] for s in st.session_state["benchmark_selected"]]
+                selected_ids_clean = [s.split(" - ")[0] for s in st.session_state.get("benchmark_selected", [])]
 
     
                 # 1️⃣ Save Job Details
@@ -724,30 +724,27 @@ with tab2:
                 custom_tgv_list = mapping_result.get("tgv_name", [])
                 st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
 
-                st.write("🧠 DEBUG: Mapping result raw:", mapping_result)
-                st.write("🧩 DEBUG: Custom TGV List:", custom_tgv_list)
-
 
                 # ✅ Simpan hasil ke session_state (biar kebaca di RPC)
                 st.session_state["custom_tgv_list"] = custom_tgv_list
 
                 # Ambil data dari session_state biar nyambung dari Tab 1
-                selected_ids = st.session_state.get("benchmark_selected", [])
                 custom_tgv_dict = st.session_state.get("custom_tgv_weight", {})
- 
-                # Konversi Python list -> PostgreSQL array literal
-                
-                selected_ids_sql = "{" + ",".join(selected_ids) + "}" if selected_ids else None
-                custom_tgv_list_sql = "{" + ",".join(f'"{x}"' for x in custom_tgv_list) + "}" if custom_tgv_list else None
-                
+
                 response = supabase.rpc(
                     "talentmatch_r5_fix",
                     {
-                        "selected_ids": selected_ids_sql,
-                        "custom_tgv_list": custom_tgv_list_sql,
+                        "selected_ids": selected_ids_clean,
+                        "custom_tgv_list": custom_tgv_list,
                         "custom_tgv_weight": custom_tgv_dict  # tetap JSONB
                     }
                 ).execute()
+
+                # --- (jika perlu debug) print values yang dikirim ---
+                st.write("DEBUG: selected_ids_clean:", selected_ids_clean)
+                st.write("DEBUG: custom_tgv_list:", custom_tgv_list)
+                st.write("DEBUG: custom_tgv_weight:", custom_tgv_dict)
+                st.write("DEBUG: RPC Response →", response.data)
 
     
                 if response.data:
