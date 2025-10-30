@@ -1,0 +1,160 @@
+WITH
+-- Latest year lookup
+latest_years AS (
+    SELECT 
+        'performance' AS source, MAX(year) AS latest_year FROM performance_yearly
+    UNION ALL
+    SELECT 
+        'competency' AS source, MAX(year) AS latest_year FROM competencies_yearly
+),
+
+-- Employee master data
+employee_master AS (
+    SELECT 
+        e.employee_id,
+        e.fullname,
+        dc.name AS company_name,
+        da.name AS area_name,
+        dp.name AS position_name,
+        dd.name AS department_name,
+        dv.name AS division_name,
+        dr.name AS directorate_name,
+        dg.name AS grade_name,
+        CASE 
+            WHEN dg.name = 'III' THEN 'Junior'
+            WHEN dg.name = 'IV' THEN 'Middle'
+            WHEN dg.name = 'V' THEN 'Senior'
+            ELSE 'Other'
+        END AS job_level,
+        de.name AS education_name,
+        dm.name AS major_name,
+        e.years_of_service_months,
+        p.rating  
+    FROM employees e
+    LEFT JOIN dim_companies dc ON e.company_id = dc.company_id
+    LEFT JOIN dim_areas da ON e.area_id = da.area_id
+    LEFT JOIN dim_positions dp ON e.position_id = dp.position_id
+    LEFT JOIN dim_departments dd ON e.department_id = dd.department_id
+    LEFT JOIN dim_divisions dv ON e.division_id = dv.division_id
+    LEFT JOIN dim_directorates dr ON e.directorate_id = dr.directorate_id
+    LEFT JOIN dim_grades dg ON e.grade_id = dg.grade_id
+    LEFT JOIN dim_education de ON e.education_id = de.education_id
+    LEFT JOIN dim_majors dm ON e.major_id = dm.major_id
+    LEFT JOIN performance_yearly p 
+      ON e.employee_id = p.employee_id
+     AND p.year = (SELECT latest_year FROM latest_years WHERE source = 'performance')
+),
+
+-- All employee TV scores combined
+employee_tv_scores AS (
+
+    -- Static attributes
+    SELECT
+        em.employee_id, em.fullname, em.company_name, em.area_name, em.position_name, em.department_name,
+        em.division_name, em.directorate_name, em.job_level, em.years_of_service_months, em.rating,
+        unnest(array['education', 'grade', 'major']) AS tv_name,
+        unnest(array[em.education_name, em.grade_name, em.major_name]) AS tv_scores,
+        'category' AS category_type
+    FROM employee_master em
+
+    UNION ALL
+
+    -- Competencies (last year)
+    SELECT
+        em.employee_id, em.fullname, em.company_name, em.area_name, em.position_name, em.department_name,
+        em.division_name, em.directorate_name, em.job_level, em.years_of_service_months, em.rating,
+        cp.pillar_label AS tv_name,
+        c.score::text AS tv_scores,
+        'numeric' AS category_type
+    FROM employee_master em
+    JOIN competencies_yearly c 
+      ON em.employee_id = c.employee_id
+     AND c.year = (SELECT latest_year FROM latest_years WHERE source = 'competency')
+    JOIN dim_competency_pillars cp ON c.pillar_code = cp.pillar_code
+
+    UNION ALL
+
+    -- Strengths
+    SELECT
+        em.employee_id, em.fullname, em.company_name, em.area_name, em.position_name, em.department_name,
+        em.division_name, em.directorate_name, em.job_level, em.years_of_service_months, em.rating,
+        s.theme AS tv_name,
+        s.theme AS tv_scores,
+        'category' AS category_type
+    FROM employee_master em
+    JOIN strengths s ON em.employee_id = s.employee_id
+
+    UNION ALL
+
+    -- PAPI
+    SELECT
+        em.employee_id, em.fullname, em.company_name, em.area_name, em.position_name, em.department_name,
+        em.division_name, em.directorate_name, em.job_level, em.years_of_service_months, em.rating,
+        ps.scale_code AS tv_name,
+        ps.score::text AS tv_scores,
+        'numeric' AS category_type
+    FROM employee_master em
+    JOIN papi_scores ps ON em.employee_id = ps.employee_id
+
+    UNION ALL
+
+    -- Numeric psych tests
+    SELECT
+        em.employee_id, em.fullname, em.company_name, em.area_name, em.position_name, em.department_name,
+        em.division_name, em.directorate_name, em.job_level, em.years_of_service_months, em.rating,
+        unnest(array['pauli','faxtor','iq','gtq','tiki']) AS tv_name,
+        unnest(array[
+            p.pauli::text,
+            p.faxtor::text,
+            p.iq::text,
+            p.gtq::text,
+            p.tiki::text
+        ]) AS tv_scores,
+        'numeric' AS category_type
+    FROM employee_master em
+    JOIN profiles_psych p ON em.employee_id = p.employee_id
+
+    UNION ALL
+
+    -- Fixed MBTI per character + DISC split properly
+    SELECT
+        em.employee_id,
+        em.fullname,
+        em.company_name,
+        em.area_name,
+        em.position_name,
+        em.department_name,
+        em.division_name,
+        em.directorate_name,
+        em.job_level,
+        em.years_of_service_months,
+        em.rating,
+        trait_mapped AS tv_name,
+        trait_mapped AS tv_scores,
+        'category' AS category_type
+    FROM employee_master em
+    JOIN profiles_psych p ON em.employee_id = p.employee_id
+    CROSS JOIN LATERAL (
+        SELECT
+            CASE
+                WHEN trait = 'E' THEN 'Extraversion'
+                WHEN trait = 'I' THEN 'Introversion'
+                WHEN trait = 'S' THEN 'Sensing'
+                WHEN trait = 'N' THEN 'Intuition'
+                WHEN trait = 'T' THEN 'Thinking'
+                WHEN trait = 'F' THEN 'Feeling'
+                WHEN trait = 'J' THEN 'Judging'
+                WHEN trait = 'P' THEN 'Perceiving'
+                WHEN trait ILIKE 'Dominance' THEN 'Dominance'
+                WHEN trait ILIKE 'Influence' THEN 'Influence'
+                WHEN trait ILIKE 'Steadiness' THEN 'Steadiness'
+                WHEN trait ILIKE 'Compliance' THEN 'Compliance'
+                ELSE trait
+            END AS trait_mapped
+        FROM unnest(
+            (CASE WHEN p.mbti IS NOT NULL THEN string_to_array(p.mbti, NULL) ELSE ARRAY[]::text[] END)  
+            ||
+            (CASE WHEN p.disc_word IS NOT NULL THEN string_to_array(p.disc_word, '-') ELSE ARRAY[]::text[] END)
+        ) AS trait
+    ) mapped_traits
+)
