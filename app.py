@@ -700,7 +700,7 @@ with tab2:
                 if response.data:
                     df_result = pd.DataFrame(response.data)
                     st.success("✅ Talent Match analysis completed!")
-                    st.dataframe(df_result, use_container_width=True)
+                    #st.dataframe(df_result, use_container_width=True)
     
                     # ==========================================================
                     # 📊 DASHBOARD INSIGHTS & VISUALIZATION (TAB 2)
@@ -722,6 +722,11 @@ with tab2:
                     )
                     top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
                     st.dataframe(top_tgv_df, use_container_width=True)
+                    ==========================================================
+                    # 🔍 Supporting Details (optional)
+                    # ==========================================================
+                    with st.expander("🔍 Full Supporting Benchmark Details"):
+                        st.dataframe(df_result, use_container_width=True, height=600)
     
                     # Match-Rate Distribution
                     import plotly.express as px
