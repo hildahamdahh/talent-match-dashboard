@@ -681,8 +681,10 @@ with tab2:
 
                 # Ambil data dari session_state biar nyambung dari Tab 1
                 selected_ids = st.session_state.get("benchmark_selected", [])
-                #custom_tgv_list = st.session_state.get("custom_tgv_list", [])
                 custom_tgv_dict = st.session_state.get("custom_tgv_weight", {})
+
+                # Konversi list → PostgreSQL array literal
+                custom_tgv_list_sql = "{" + ",".join(custom_tgv_list) + "}" if custom_tgv_list else None
 
                 # 3️⃣ Run SQL Function
                 response = supabase.rpc(
