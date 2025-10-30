@@ -1,0 +1,280 @@
+CREATE OR REPLACE FUNCTION talentmatch_r5_fix(
+  selected_ids text[],
+  custom_tgv_list text[] DEFAULT NULL,
+  custom_tgv_weight jsonb DEFAULT NULL
+)
+RETURNS TABLE (
+  employee_id text,
+  fullname text,
+  position_name text,
+  job_level text,
+  rating text,
+  tgv_name text,
+  tv_name text,
+  category_type text,
+  user_score text,
+  tv_weight numeric,
+  tgv_weight numeric,
+  baseline_score text,
+  tv_match_rate numeric,
+  tgv_match_rate numeric,
+  final_match_rate numeric
+)
+LANGUAGE SQL
+AS $$
+WITH
+-- ==========================================================
+-- 0️⃣ CUSTOM TGV WEIGHT PARSING (AMAN MESKI {} ATAU NULL)
+-- ==========================================================
+tgv_weight_custom AS (
+  SELECT
+    key AS tgv_name,
+    value::numeric AS custom_weight
+  FROM jsonb_each_text(
+    COALESCE(custom_tgv_weight, '{}'::jsonb)
+  )
+),
+
+
+-- ==========================================================
+-- 1️⃣ EMPLOYEE DETAIL
+-- ==========================================================
+emp_detail AS (
+  SELECT DISTINCT
+    employee_id,
+    fullname,
+    rating,
+    position_name,
+    job_level
+  FROM employee_tv_scores
+  WHERE employee_id = ANY(selected_ids)
+),
+
+-- ==========================================================
+-- 2️⃣ TV WEIGHT CALCULATION
+-- ==========================================================
+tv_weight_base AS (
+  SELECT
+    t.tv_name,
+    t.domain,
+    t.tgv_name,
+    COALESCE(c.custom_weight, t.tgv_weight)::numeric AS tgv_weight_resolved,
+    COALESCE(t."% or correlation to top", 0)::numeric AS correlation_raw
+  FROM tv_tgv t
+  LEFT JOIN tgv_weight_custom c USING (tgv_name)
+  WHERE (
+    custom_tgv_list IS NULL
+    OR cardinality(custom_tgv_list) = 0
+    OR t.tgv_name = ANY(custom_tgv_list)
+  )
+),
+tv_weight_props AS (
+  SELECT
+    tv_name,
+    domain,
+    tgv_name,
+    tgv_weight_resolved AS tgv_weight,
+    correlation_raw,
+    ABS(correlation_raw) / NULLIF(SUM(ABS(correlation_raw)) OVER (PARTITION BY tgv_name), 0) AS correlation_prop
+  FROM tv_weight_base
+),
+tv_weight_calc AS (
+  SELECT
+    tv_name,
+    domain,
+    tgv_name,
+    tgv_weight,
+    correlation_raw,
+    correlation_prop,
+    ROUND((correlation_prop * tgv_weight)::numeric, 12) AS tv_weight
+  FROM tv_weight_props
+),
+
+-- ==========================================================
+-- 3️⃣ BASELINE CALCULATION
+-- ==========================================================
+benchmark_raw AS (
+  SELECT
+    ets.employee_id,
+    ets.tv_name,
+    ets.tv_scores,
+    ets.category_type
+  FROM employee_tv_scores ets
+  WHERE ets.employee_id = ANY(selected_ids)
+    AND ets.tv_name IS NOT NULL
+    AND COALESCE(ets.tv_scores, '') <> ''
+),
+baseline_numeric AS (
+  SELECT
+    tv_name,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (
+      ORDER BY (NULLIF(REGEXP_REPLACE(tv_scores, '[^0-9\\.\-]', '', 'g'), ''))::numeric
+    ) AS baseline_numeric
+  FROM benchmark_raw
+  WHERE category_type = 'numeric'
+    AND tv_scores ~ '^[0-9\\.\-]+$'
+  GROUP BY tv_name
+),
+baseline_categorical AS (
+  SELECT tv_name, tv_scores AS baseline_category
+  FROM (
+    SELECT
+      tv_name,
+      tv_scores,
+      ROW_NUMBER() OVER (PARTITION BY tv_name ORDER BY COUNT(*) DESC, tv_scores) AS rn
+    FROM benchmark_raw
+    WHERE category_type IN ('category', 'categorical')
+    GROUP BY tv_name, tv_scores
+  ) x
+  WHERE rn = 1
+),
+tv_baseline AS (
+  SELECT 
+    tv_name,
+    baseline_numeric::text AS baseline_score,
+    'numeric' AS category_type
+  FROM baseline_numeric
+  UNION ALL
+  SELECT 
+    tv_name,
+    baseline_category::text AS baseline_score,
+    'categorical' AS category_type
+  FROM baseline_categorical
+),
+
+-- ==========================================================
+-- 4️⃣ JOIN TV_WEIGHT + BASELINE
+-- ==========================================================
+tv_master AS (
+  SELECT
+    COALESCE(tw.tv_name, tb.tv_name) AS tv_name,
+    tw.tgv_name,
+    tw.tv_weight,
+    tw.tgv_weight,
+    tb.baseline_score,
+    tb.category_type
+  FROM tv_weight_calc tw
+  FULL JOIN tv_baseline tb USING (tv_name)
+),
+
+-- ==========================================================
+-- 5️⃣ ALL EMPLOYEE + BASELINE + USER SCORE
+-- ==========================================================
+all_employees AS (
+  SELECT
+    e.employee_id,
+    e.fullname,
+    e.rating,
+    e.position_name,
+    e.job_level,
+    e.tv_name,
+    e.tv_scores AS user_score,
+    t.tgv_name,
+    t.tv_weight,
+    t.tgv_weight,
+    t.baseline_score,
+    t.category_type
+  FROM employee_tv_scores e
+  LEFT JOIN tv_master t USING (tv_name)
+  WHERE e.employee_id NOT IN (SELECT UNNEST(selected_ids))
+    AND (
+      custom_tgv_list IS NULL
+      OR cardinality(custom_tgv_list) = 0
+      OR t.tgv_name = ANY(custom_tgv_list)
+    )
+),
+
+-- ==========================================================
+-- 6️⃣ TV MATCH RATE CALCULATION
+-- ==========================================================
+tv_match_calc AS (
+  SELECT
+    a.*,
+    CASE 
+      WHEN a.category_type = 'numeric'
+           AND a.baseline_score ~ '^[0-9\\.\-]+$'
+           AND a.user_score ~ '^[0-9\\.\-]+$'
+      THEN ROUND(
+        GREATEST(0, LEAST(
+          100,
+          100 - ABS(
+            (COALESCE(a.user_score, '0')::numeric - a.baseline_score::numeric)
+            / NULLIF(a.baseline_score::numeric, 0)
+          ) * 100
+        )),
+        2
+      )
+      WHEN a.category_type = 'categorical'
+           AND a.baseline_score IS NOT NULL
+           AND a.user_score IS NOT NULL
+      THEN CASE 
+        WHEN TRIM(LOWER(a.user_score)) = TRIM(LOWER(a.baseline_score)) 
+        THEN 100 ELSE 0 
+      END
+      ELSE 0
+    END AS tv_match_rate
+  FROM all_employees a
+),
+
+-- ==========================================================
+-- 7️⃣ TGV MATCH RATE
+-- ==========================================================
+tgv_match_calc AS (
+  SELECT
+    employee_id,
+    fullname,
+    position_name,
+    job_level,
+    rating,
+    tgv_name,
+    MAX(tv_match_calc.tgv_weight) AS tgv_weight,
+    ROUND(SUM(tv_match_rate * tv_weight) / NULLIF(SUM(tv_weight), 0), 2) AS tgv_match_rate
+  FROM tv_match_calc
+  GROUP BY employee_id, fullname, position_name, job_level, rating, tgv_name
+),
+
+-- ==========================================================
+-- 8️⃣ FINAL MATCH RATE
+-- ==========================================================
+final_match_calc AS (
+  SELECT
+    employee_id,
+    fullname,
+    position_name,
+    job_level,
+    rating,
+    ROUND((SUM(tgv_match_rate * tgv_weight) / NULLIF(SUM(tgv_weight), 0))::numeric, 2) AS final_match_rate
+  FROM tgv_match_calc
+  GROUP BY employee_id, fullname, position_name, job_level, rating
+)
+
+-- ==========================================================
+-- ✅ FINAL OUTPUT (SAFE UNTUK KOSONG / NULL PARAM)
+-- ==========================================================
+SELECT
+  a.employee_id,
+  a.fullname,
+  a.position_name,
+  a.job_level,
+  a.rating,
+  a.tgv_name,
+  a.tv_name,
+  a.category_type,
+  a.baseline_score,
+  a.tv_weight,
+  a.tgv_weight,
+  a.user_score,
+  a.tv_match_rate,
+  t.tgv_match_rate,
+  f.final_match_rate
+FROM tv_match_calc a
+LEFT JOIN tgv_match_calc t USING (employee_id, tgv_name)
+LEFT JOIN final_match_calc f USING (employee_id)
+WHERE a.employee_id NOT IN (SELECT UNNEST(selected_ids))
+  AND (
+    custom_tgv_list IS NULL
+    OR cardinality(custom_tgv_list) = 0
+    OR a.tgv_name = ANY(custom_tgv_list)
+  )
+ORDER BY f.final_match_rate DESC, a.employee_id, a.tgv_name, a.tv_name;
+$$;
