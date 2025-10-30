@@ -44,7 +44,7 @@ st.title("🎯 Talent Match Intelligence Dashboard")
 # 🧭 TAB SETUP
 # ==========================================================
 
-tab1, tab2 = st.tabs(["🧩 Role Information", "🧠 Job Details"])
+tab1, tab2 = st.tabs(["1. Role Information", "2. Job Details"])
 
 # ==========================================================
 # TAB 1: ROLE INFORMATION
@@ -322,7 +322,7 @@ with tab1:
         st.markdown("## 📊 Dashboard Insights & Visualization")
     
         # ===============================
-        # 🏆 Ranked Talent List
+        # Ranked Talent List
         # ===============================
         st.markdown("### 🏆 Ranked Talent List")
         st.dataframe(top_tgv_df, use_container_width=True)
@@ -350,9 +350,9 @@ with tab1:
         st.plotly_chart(fig_hist, use_container_width=True)
     
         # ===============================
-        # 💪 Top Strengths & Gaps Across TGVs
+        # Top Strengths & Gaps Across TGVs
         # ===============================
-        st.markdown("### 💪 Top Strengths & 🚧 Gaps Across TGVs")
+        st.markdown("###  Top Strengths & Gaps Across TGVs")
     
         tgv_summary = (
             df_result.groupby("tgv_name", as_index=False)
