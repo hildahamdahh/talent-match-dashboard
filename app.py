@@ -178,7 +178,10 @@ with tab1:
     
     if abs(total_weight - 1.0) > 0.01:
         st.warning("⚠️ Total weight sebaiknya mendekati 1.00 agar proporsional.")
-    
+
+    # ✅ simpan custom_tgv_dict ke session_state
+    st.session_state["custom_tgv_weight"] = custom_tgv_dict
+
     # ==========================================================
     # 🚀 Generate Job Profile & Variable Score
     # ==========================================================
@@ -678,7 +681,7 @@ with tab2:
                     {
                         "selected_ids": selected_ids,
                         "custom_tgv_list": custom_tgv_list,
-                        "custom_tgv_weight": custom_tgv_dict  # dikirim sebagai JSONB
+                        "custom_tgv_weight": st.session_state.get("custom_tgv_weight", None)  # dikirim sebagai JSONB
                     }
                 ).execute()
     
