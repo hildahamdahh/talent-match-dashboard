@@ -26,7 +26,7 @@ This repository contains all main source files used to build the **Talent Match 
 git clone https://github.com/your-username/talent-match-intelligence.git
 cd talent-match-intelligence
 
-**### 2. Create a Virtual Environment**
+### 2. Create a Virtual Environment
 python3 -m venv venv
 source venv/bin/activate   # For Mac/Linux
 venv\Scripts\activate      # For Windows
