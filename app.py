@@ -683,7 +683,7 @@ with tab2:
 
                 # 3️⃣ Run SQL Function
                 response = supabase.rpc(
-                    "talentmatch_r4_fix",
+                    "talentmatch_r5_fix",
                     {
                         "selected_ids": selected_ids,
                         "custom_tgv_list": custom_tgv_list,
