@@ -140,6 +140,56 @@ with tab1:
     if selected is not None:
         st.session_state["benchmark_selected"] = selected
 
+
+    # ==========================================================
+# 🧠 AI JOB PROFILE OVERVIEW (OpenRouter)
+# ==========================================================
+def generate_job_profile(role_name, job_level, role_purpose):
+    """Generate AI-based Job Profile Overview using OpenRouter"""
+    try:
+        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+    except Exception:
+        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+        "X-Title": "Talent Match Intelligence",
+        "Content-Type": "application/json",
+    }
+
+    prompt = f"""
+    You are an HR Talent Intelligence Assistant.
+    Generate a concise, structured Job Profile Overview for a {job_level} {role_name}.
+    
+    Include exactly these sections:
+    1️⃣ Job Requirements
+    2️⃣ Job Description
+    3️⃣ Key Competencies
+    
+    Context: {role_purpose}
+    """
+
+    payload = {
+        "model": "openai/gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You generate concise job profiles for HR professionals."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers=headers,
+        data=json.dumps(payload)
+    )
+
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
+    else:
+        return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
+        
     # ==========================================================
     # 🚀 Generate Job Profile & Variable Score
     # ==========================================================
@@ -155,40 +205,61 @@ with tab1:
     if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
         if not (selected and len(selected) > 0):
             st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
+        elif not selected_role or not selected_job_level:
+            st.warning("⚠️ Mohon isi Role Name dan Job Level terlebih dahulu.")
         else:
-            selected_ids = [s.split(" - ")[0] for s in selected]
-            try:
-                result = supabase.rpc("talentmatch_r3_fix", {"selected_ids": selected_ids}).execute()
-                if result.data:
-                    df_result = pd.DataFrame(result.data)
-                    desired_cols = [
-                        "employee_id", "fullname", "position_name", "job_level", "rating",
-                        "tgv_name", "category_type", "baseline_score", "tgv_weight",
-                        "user_score", "tgv_match_rate", "final_match_rate"
-                    ]
-                    available_cols = [c for c in desired_cols if c in df_result.columns]
-                    df_result = df_result[available_cols].copy()
-
-                    df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
-                    df_result["tgv_match_rate"] = pd.to_numeric(df_result["tgv_match_rate"], errors="coerce")
-
-                    top_tgv_df = (
-                        df_result.sort_values(["employee_id", "tgv_match_rate"], ascending=[True, False])
-                        .groupby("employee_id", as_index=False)
-                        .first()
-                        .loc[:, ["employee_id", "fullname", "position_name", "job_level", "tgv_name", "tgv_match_rate", "final_match_rate"]]
-                    )
-
-                    top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
-
-                    st.session_state.job_generated = True
-                    st.session_state.df_result = df_result
-                    st.session_state.top_tgv_df = top_tgv_df
-
+            with st.spinner("🤖 Generating AI-based job profile..."):
+                # 1️⃣ Generate AI Job Profile Overview
+                ai_profile = generate_job_profile(selected_role, selected_job_level, role_purpose)
+    
+                if ai_profile and not ai_profile.startswith("⚠️"):
+                    st.subheader("🧠 AI-Generated Job Profile Overview")
+    
+                    clean_text = re.sub(r"<[^>]*>", "", ai_profile)
+                    clean_text = clean_text.replace("&nbsp;", " ").replace("&amp;", "&").strip()
+    
+                    st.write(clean_text)
+                    st.session_state["ai_job_profile_overview"] = clean_text
+                    st.success("✅ AI Job Profile berhasil dihasilkan!")
                 else:
-                    st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
-            except Exception as e:
-                st.error(f"Gagal menjalankan query: {e}")
+                    st.error("⚠️ Gagal menghasilkan Job Profile. Silakan coba lagi.")
+    
+            # 2️⃣ Lanjut ke Variable Scoring via RPC
+            with st.spinner("📊 Menghitung Variable Score..."):
+                selected_ids = [s.split(" - ")[0] for s in selected]
+                try:
+                    result = supabase.rpc("talentmatch_r3_fix", {"selected_ids": selected_ids}).execute()
+                    if result.data:
+                        df_result = pd.DataFrame(result.data)
+                        desired_cols = [
+                            "employee_id", "fullname", "position_name", "job_level", "rating",
+                            "tgv_name", "category_type", "baseline_score", "tgv_weight",
+                            "user_score", "tgv_match_rate", "final_match_rate"
+                        ]
+                        available_cols = [c for c in desired_cols if c in df_result.columns]
+                        df_result = df_result[available_cols].copy()
+    
+                        df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
+                        df_result["tgv_match_rate"] = pd.to_numeric(df_result["tgv_match_rate"], errors="coerce")
+    
+                        top_tgv_df = (
+                            df_result.sort_values(["employee_id", "tgv_match_rate"], ascending=[True, False])
+                            .groupby("employee_id", as_index=False)
+                            .first()
+                            .loc[:, ["employee_id", "fullname", "position_name", "job_level", "tgv_name", "tgv_match_rate", "final_match_rate"]]
+                        )
+    
+                        top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
+    
+                        st.session_state.job_generated = True
+                        st.session_state.df_result = df_result
+                        st.session_state.top_tgv_df = top_tgv_df
+    
+                        st.success("✅ Variable Scoring selesai dihitung!")
+                    else:
+                        st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
+                except Exception as e:
+                    st.error(f"Gagal menjalankan query: {e}")
                 
    # ==========================================================
     # 🧠 STEP 4: Dashboard Insights & Visualization
