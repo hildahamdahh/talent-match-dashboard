@@ -416,6 +416,7 @@ with tab1:
 # TAB 2: JOB DETAILS
 # ==========================================================
 with tab2:
+    # ====== STYLE: Center Layout + Editable List ======
     st.markdown(
         """
         <style>
@@ -427,219 +428,412 @@ with tab2:
             text-align: center;
         }
         .job-details-box {
-            width: 80%;
-            background-color: #F8F9FA;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-top: 1rem;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            width: 70%;
+            text-align: left;
         }
-        .save-button {
-            font-size: 1rem;
-            font-weight: 600;
-            color: white;
-            background-color: #4C78A8;
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .item-text { font-size: 0.95rem; }
+        .icon-btn {
+            background: none;
             border: none;
-            padding: 0.6rem 1.5rem;
-            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-    st.markdown("### 1️⃣ Role Summary Overview")
-    st.caption("Summarized information generated from Step 1 selections and AI-based job profiling.")
+    st.markdown('<div class="job-details-container"><div class="job-details-box">', unsafe_allow_html=True)
 
-    # Display stored AI profile if available
-    if "ai_job_profile_overview" in st.session_state:
-        st.text_area(
-            "AI-Generated Job Profile Overview",
-            st.session_state["ai_job_profile_overview"],
-            height=200
-        )
-    else:
-        st.info("No job profile generated yet — please complete Step 1 first.")
+    st.subheader("3️⃣ Job Details (AI Suggestions + Editable Lists)")
+    st.caption("Tambahkan atau hapus sesuai kebutuhan. AI akan regenerate otomatis jika role berubah.")
 
-    # ==========================================================
-    # INPUT FIELDS FOR ROLE DETAILS
-    # ==========================================================
-    st.markdown("### 2️⃣ Input Key Role Details")
-    st.caption("Provide or adjust the details below to refine your role specification before running Talent Match.")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        role_name_input = st.text_input("Role Name", value=st.session_state.get("selected_role", ""))
-        job_level_input = st.text_input("Job Level", value=st.session_state.get("selected_job_level", ""))
-        directorate_input = st.text_input("Directorate", placeholder="e.g., Human Capital")
-    with col2:
-        department_input = st.text_input("Department", placeholder="e.g., Talent Development")
-        division_input = st.text_input("Division", placeholder="e.g., People Analytics")
-        company_input = st.text_input("Company", placeholder="e.g., Rakamin Academy")
-
-    st.text_area(
-        "Role Description",
-        placeholder="Describe the role scope and key responsibilities in 2–3 sentences."
-    )
-
-    # ==========================================================
-    # CUSTOM WEIGHT SETTINGS SECTION
-    # ==========================================================
-    st.markdown("---")
-    st.markdown("### 3️⃣ Custom Weight Settings (TGV Prioritization)")
-    st.caption("You may customize the TGV list and weighting again here before executing Talent Match Scoring.")
-
-    # Select specific TGVs to apply
-    tgv_options = [
-        "Leadership & Influence",
-        "Motivation & Drive",
-        "Cognitive Complexity & Problem-Solving",
-        "Conscientiousness & Reliability",
-        "Adaptability & Stress Tolerance",
-        "Social Orientation & Collaboration",
-        "Creativity & Innovation Orientation",
-        "Cultural & Values Urgency"
-    ]
-
-    selected_tgv_list = st.multiselect(
-        "Select TGVs to include (leave empty to include all)",
-        options=tgv_options,
-        placeholder="Select key TGVs for this role"
-    )
-
-    # Editable TGV Weights
-    st.markdown("#### Adjust Custom TGV Weights")
-    tgv_weight_inputs = {}
-    cols = st.columns(4)
-    for i, tgv_name in enumerate(tgv_options):
-        with cols[i % 4]:
-            tgv_weight_inputs[tgv_name] = st.number_input(
-                tgv_name,
-                min_value=0.00,
-                max_value=0.50,
-                step=0.01,
-                value=st.session_state.get("custom_tgv_weight", {}).get(tgv_name, 0.10),
-                key=f"tgv_weight_tab2_{i}"
-            )
-
-    st.markdown(f"**Total Weight = {sum(tgv_weight_inputs.values()):.2f}**")
-
-    # ==========================================================
-    # TALENT MATCH EXECUTION BUTTON
-    # ==========================================================
-    st.markdown("---")
-    st.markdown("### 4️⃣ Execute Talent Match Scoring")
-
-    if st.button("💾 Save & Run Talent Match"):
-        benchmark_emps = [s.split(" - ")[0] for s in st.session_state.get("benchmark_selected", [])]
-        custom_tgv_list = selected_tgv_list if selected_tgv_list else None
-        custom_tgv_weight = tgv_weight_inputs
-
-        if not benchmark_emps:
-            st.warning("Please select benchmark employees first from Step 1.")
-        else:
-            with st.spinner("Running Talent Match algorithm..."):
-                try:
-                    result = supabase.rpc(
-                        "talentmatch_r5_fix",
-                        {
-                            "selected_ids": benchmark_emps,
-                            "custom_tgv_list": custom_tgv_list,
-                            "custom_tgv_weight": custom_tgv_weight
-                        }
-                    ).execute()
-
-                    if result.data:
-                        df_result_tab2 = pd.DataFrame(result.data)
-                        st.session_state["result_tab2"] = df_result_tab2
-
-                        st.success("✅ Talent Match computation completed successfully.")
-                        st.dataframe(df_result_tab2.head(20), use_container_width=True)
-                    else:
-                        st.warning("⚠️ No result returned. Please verify the selected benchmark or weights.")
-                except Exception as e:
-                    st.error(f"Failed to execute function: {e}")
-
-    # ==========================================================
-    # DASHBOARD INSIGHT SECTION (TAB 2)
-    # ==========================================================
-    if "result_tab2" in st.session_state:
-        df_result_tab2 = st.session_state["result_tab2"]
-
-        st.markdown("---")
-        st.markdown("## 📊 Insight Visualization")
-
-        # Final Match Distribution
-        st.markdown("### Final Match Rate Distribution")
-        fig_final = px.histogram(
-            df_result_tab2,
-            x="final_match_rate",
-            nbins=15,
-            title="Distribution of Final Match Rates",
-            color_discrete_sequence=["#4C78A8"]
-        )
-        st.plotly_chart(fig_final, use_container_width=True)
-
-        # TGV Match Summary
-        st.markdown("### Average Match Rate by TGV")
-        tgv_summary_tab2 = (
-            df_result_tab2.groupby("tgv_name", as_index=False)
-            .agg(avg_tgv_match=("tgv_match_rate", "mean"))
-            .sort_values("avg_tgv_match", ascending=False)
-        )
-
-        fig_tgv_bar = px.bar(
-            tgv_summary_tab2,
-            x="tgv_name",
-            y="avg_tgv_match",
-            title="Average TGV Match Rate (All Employees)",
-            color="avg_tgv_match",
-            color_continuous_scale="Blues"
-        )
-        st.plotly_chart(fig_tgv_bar, use_container_width=True)
-
-        # Ranked Employee Table
-        st.markdown("### Ranked Employee Results")
-        ranked_employees = (
-            df_result_tab2.groupby(["employee_id", "fullname", "position_name", "job_level"], as_index=False)
-            .agg(final_score=("final_match_rate", "mean"))
-            .sort_values("final_score", ascending=False)
-        )
-        st.dataframe(ranked_employees, use_container_width=True)
-
-        # Optional AI Summary
-        st.markdown("### AI Summary Insights")
+    # ====== Helper: Generate AI Job Details ======
+    def generate_job_details(role_name, job_level):
         try:
-            client = OpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key=os.getenv("OPENROUTER_API_KEY")
+            OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+        except Exception:
+            st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+            return None
+
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+            "X-Title": "Talent Match Intelligence",
+            "Content-Type": "application/json",
+        }
+
+        prompt = f"""
+        You are an HR assistant helping define job details.
+        Generate 2 concise bullet lists:
+        1) Key Responsibilities (10–12 items)
+        2) Key Competencies (10–12 items, each 1–3 words only)
+        for a {job_level} {role_name}.
+        Return JSON:
+        {{
+          "responsibilities": ["item1", "item2"],
+          "competencies": ["item1", "item2"]
+        }}
+        """
+
+        payload = {
+            "model": "openai/gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You generate short, structured job detail lists for HR systems."},
+                {"role": "user", "content": prompt}
+            ]
+        }
+
+        try:
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers, data=json.dumps(payload), timeout=30
             )
-            with st.spinner("Generating AI interpretation of results..."):
-                avg_rate = ranked_employees["final_score"].mean()
-                best_name = ranked_employees.iloc[0]["fullname"]
-                best_score = ranked_employees.iloc[0]["final_score"]
-                weakest_area = tgv_summary_tab2.iloc[-1]["tgv_name"]
-
-                prompt = f"""
-                You are an HR Data Analyst. Based on the latest scoring results:
-                - Average final match rate: {avg_rate:.1f}%
-                - Top performer: {best_name} ({best_score:.1f}%)
-                - Lowest TGV dimension: {weakest_area}
-
-                Write a short, professional 3–5 sentence insight explaining the team's general strengths,
-                what makes the top performer excel, and what dimension may need improvement or upskilling.
-                """
-
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "You are an HR data analyst writing brief insights."},
-                        {"role": "user", "content": prompt}
-                    ]
-                )
-                st.success(response.choices[0].message.content)
         except Exception as e:
-            st.error(f"AI summary generation failed: {e}")
+            st.error(f"⚠️ Gagal request ke OpenRouter: {e}")
+            return None
+
+        if response.status_code != 200:
+            st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
+            return None
+
+        try:
+            content = response.json()["choices"][0]["message"]["content"]
+            clean_json = re.sub(r"```json|```", "", content).strip()
+            return json.loads(clean_json)
+        except Exception as e:
+            st.error(f"⚠️ Gagal parsing hasil generate job details: {e}")
+            st.text(content)
+            return None
+
+    # ====== AI CACHE: only regenerate if role/job level changed ======
+    if "job_details_ai" not in st.session_state:
+        st.session_state["job_details_ai"] = None
+        st.session_state["last_role"] = None
+        st.session_state["last_job_level"] = None
+
+    if (
+        st.session_state["job_details_ai"] is None
+        or st.session_state["last_role"] != selected_role
+        or st.session_state["last_job_level"] != selected_job_level
+    ):
+        with st.spinner("🤖 Generating AI-based job details..."):
+            ai_details = generate_job_details(selected_role, selected_job_level)
+            if ai_details:
+                st.session_state["job_details_ai"] = ai_details
+                st.session_state["last_role"] = selected_role
+                st.session_state["last_job_level"] = selected_job_level
+            else:
+                st.stop()
+    else:
+        ai_details = st.session_state["job_details_ai"]
+
+    # ====== Initialize Lists ======
+    st.session_state.setdefault("selected_responsibilities", [])
+    st.session_state.setdefault("selected_competencies", [])
+
+    # ====== Helper: Editable Section ======
+    def render_detail_section(title, key, ai_options):
+        st.markdown(f"#### {title}")
+
+        cols = st.columns([6, 1])
+        with cols[0]:
+            selected = st.selectbox(
+                f"Select {title}",
+                options=[""] + ai_options,
+                key=f"select_{key}",
+                label_visibility="collapsed"
+            )
+        with cols[1]:
+            if st.button("➕ Add", key=f"add_{key}"):
+                if selected and selected not in st.session_state[key]:
+                    st.session_state[key].append(selected)
+
+        for i, item in enumerate(st.session_state[key]):
+            col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
+            with col1:
+                st.markdown(f"• {item}")
+            with col2:
+                if st.button("✏️", key=f"edit_{key}_{i}"):
+                    new_val = st.text_input(f"Edit {item}", value=item, key=f"edit_input_{key}_{i}")
+                    if new_val and new_val != item:
+                        st.session_state[key][i] = new_val
+                        st.experimental_rerun()
+            with col3:
+                if st.button("❌", key=f"del_{key}_{i}"):
+                    st.session_state[key].pop(i)
+                    st.experimental_rerun()
+
+    st.markdown("---")
+    render_detail_section("Key Responsibilities", "selected_responsibilities", ai_details["responsibilities"])
+    st.markdown("---")
+    render_detail_section("Key Competencies", "selected_competencies", ai_details["competencies"])
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+    # ====== Helper: Mapping AI → TGV Domain ======
+    # ✅ BENAR — versi AI (bukan manual mapping)
+    def map_job_details_to_tgv(responsibilities, competencies):
+        try:
+            OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+        except Exception:
+            st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+            return None
+    
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+            "X-Title": "Talent Match Intelligence",
+            "Content-Type": "application/json",
+        }
+    
+        prompt = f"""
+        You are an HR data-mapping assistant.
+        Map the following job details into internal competency *domains* (tgv_name)
+        used in the Talent Match Intelligence system.
+    
+        Responsibilities:
+        {responsibilities}
+    
+        Competencies:
+        {competencies}
+    
+        Choose only from this list of valid TGV names:
+        - Adaptability & Stress Tolerance
+        - Cognitive Complexity & Problem-Solving
+        - Conscientiousness & Reliability
+        - Creativity & Innovation Orientation
+        - Cultural & Values Urgency
+        - Leadership & Influence
+        - Motivation & Drive
+        - Social Orientation & Collaboration
+    
+        Return only JSON with one array:
+        {{
+          "tgv_name": ["Leadership & Influence", "Motivation & Drive"]
+        }}
+        """
+    
+        payload = {
+            "model": "openai/gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You map HR job details to internal competency domains."},
+                {"role": "user", "content": prompt}
+            ]
+        }
+    
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(payload)
+        )
+    
+        if response.status_code == 200:
+            try:
+                content = response.json()["choices"][0]["message"]["content"]
+                clean_json = re.sub(r"```json|```", "", content).strip()
+                return json.loads(clean_json)
+            except Exception as e:
+                st.error(f"⚠️ Gagal parsing hasil mapping: {e}")
+                st.text(content)
+                return None
+        else:
+            st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
+            return None
+    
+    # ==========================================================
+    # 💾 SAVE & RUN TALENT MATCH
+    # ==========================================================
+    if st.button("💾 Save & Run Talent Match", key="run_talent_match"):
+        with st.spinner("Running Talent Match analysis..."):
+            try:
+                sel = st.session_state.get("benchmark_selected", [])
+                if not sel:
+                    st.warning("⚠️ Pilih minimal 1 benchmark employee di tab Role Information terlebih dahulu.")
+                    st.stop()
+    
+                selected_ids_clean = [s.split(" - ")[0] for s in st.session_state.get("benchmark_selected", [])]
+
+    
+                # 1️⃣ Save Job Details
+                ai_data = st.session_state.get("job_details_ai", {})
+                data_insert = {
+                    "role_name": selected_role,
+                    "job_level": selected_job_level,
+                    "responsibilities": st.session_state["selected_responsibilities"],
+                    "competencies": st.session_state["selected_competencies"],
+                    "created_at": datetime.now().isoformat()
+                }
+                supabase.table("job_details").insert(data_insert).execute()
+    
+                # 2️⃣ Mapping to TGV
+                mapping_result = map_job_details_to_tgv(
+                    st.session_state["selected_responsibilities"],
+                    st.session_state["selected_competencies"]
+                )
+                custom_tgv_list = mapping_result.get("tgv_name", [])
+                st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
+
+
+                # ✅ Simpan hasil ke session_state (biar kebaca di RPC)
+                st.session_state["custom_tgv_list"] = custom_tgv_list
+
+                # Ambil data dari session_state biar nyambung dari Tab 1
+                custom_tgv_dict = st.session_state.get("custom_tgv_weight", {})
+
+                response = supabase.rpc(
+                    "talentmatch_r5_fix",
+                    {
+                        "selected_ids": selected_ids_clean,
+                        "custom_tgv_list": custom_tgv_list,
+                        "custom_tgv_weight": custom_tgv_dict  # tetap JSONB
+                    }
+                ).execute()
+
+    
+                if response.data:
+                    df_result = pd.DataFrame(response.data)
+                    st.success("✅ Talent Match analysis completed!")
+                    st.dataframe(df_result, use_container_width=True)
+    
+                    # ==========================================================
+                    # 📊 DASHBOARD INSIGHTS & VISUALIZATION (TAB 2)
+                    # ==========================================================
+                    st.markdown("---")
+                    st.markdown("## 📊 Dashboard Insights & Visualization")
+    
+                    # Konversi numerik
+                    df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
+                    df_result["tgv_match_rate"] = pd.to_numeric(df_result["tgv_match_rate"], errors="coerce")
+    
+                    #  Ranked Talent List
+                    st.markdown("### Ranked Talent List")
+                    top_tgv_df = (
+                        df_result.sort_values(["employee_id", "tgv_match_rate"], ascending=[True, False])
+                        .groupby("employee_id", as_index=False)
+                        .first()
+                        .loc[:, ["employee_id", "fullname", "tgv_name", "tgv_match_rate", "final_match_rate"]]
+                    )
+                    top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
+                    st.dataframe(top_tgv_df, use_container_width=True)
+    
+                    # Match-Rate Distribution
+                    import plotly.express as px
+                    st.markdown("### Match-Rate Distribution")
+                    fig_hist = px.histogram(
+                        df_result,
+                        x="final_match_rate",
+                        nbins=10,
+                        title="Distribution of Final Match Rates",
+                        labels={"final_match_rate": "Final Match Rate (%)"},
+                        color_discrete_sequence=["#4C78A8"]
+                    )
+                    st.plotly_chart(fig_hist, use_container_width=True)
+    
+                    # Top Strengths & Gaps Across TGVs
+                    st.markdown("### Top Strengths & Gaps Across TGVs")
+                    tgv_summary = (
+                        df_result.groupby("tgv_name", as_index=False)
+                        .agg(avg_match_rate=("tgv_match_rate", "mean"))
+                        .sort_values("avg_match_rate", ascending=False)
+                    )
+                    fig_bar = px.bar(
+                        tgv_summary,
+                        x="tgv_name",
+                        y="avg_match_rate",
+                        title="Average Match Rate by TGV",
+                        color="avg_match_rate",
+                        color_continuous_scale="Blues",
+                        labels={"avg_match_rate": "Avg Match Rate (%)", "tgv_name": "TGV Name"}
+                    )
+                    st.plotly_chart(fig_bar, use_container_width=True)
+    
+                    # Benchmark vs Candidate (Radar Chart)
+                    import plotly.graph_objects as go
+                    st.markdown("### Benchmark vs Candidate Comparison")
+                    selected_emp = st.selectbox(
+                        "Pilih kandidat untuk dibandingkan dengan baseline:",
+                        top_tgv_df["fullname"]
+                    )
+                    emp_data = df_result[df_result["fullname"] == selected_emp]
+                    tgv_list = emp_data["tgv_name"].tolist()
+                    emp_score = emp_data["tgv_match_rate"].tolist()
+                    baseline_score = [100] * len(tgv_list)
+    
+                    fig_radar = go.Figure()
+                    fig_radar.add_trace(go.Scatterpolar(
+                        r=baseline_score,
+                        theta=tgv_list,
+                        fill='toself',
+                        name='Benchmark (Ideal)',
+                        line=dict(color='lightgray')
+                    ))
+                    fig_radar.add_trace(go.Scatterpolar(
+                        r=emp_score,
+                        theta=tgv_list,
+                        fill='toself',
+                        name=selected_emp,
+                        line=dict(color='royalblue')
+                    ))
+                    fig_radar.update_layout(
+                        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                        showlegend=True,
+                        title=f"TGV Comparison: {selected_emp} vs Benchmark"
+                    )
+                    st.plotly_chart(fig_radar, use_container_width=True)
+    
+                    # AI Summary Insights
+                    st.markdown("### AI Summary Insights")
+                    try:
+                        from openai import OpenAI
+                        import os
+    
+                        client = OpenAI(
+                            base_url="https://openrouter.ai/api/v1",
+                            api_key=os.getenv("OPENROUTER_API_KEY")
+                        )
+    
+                        with st.spinner("Menganalisis hasil match-rate dengan AI..."):
+                            avg_score = df_result["final_match_rate"].mean()
+                            top_name = top_tgv_df.iloc[0]["fullname"]
+                            top_score = top_tgv_df.iloc[0]["final_match_rate"]
+                            strongest_tgv = tgv_summary.iloc[0]["tgv_name"]
+                            weakest_tgv = tgv_summary.iloc[-1]["tgv_name"]
+    
+                            prompt = f"""
+                            Kamu adalah analis HR Data. Berdasarkan hasil scoring berikut:
+                            - Rata-rata match rate: {avg_score:.1f}%
+                            - Top performer: {top_name} ({top_score:.1f}%)
+                            - Kompetensi terkuat: {strongest_tgv}
+                            - Kompetensi terlemah: {weakest_tgv}
+    
+                            Buat ringkasan singkat (3-5 kalimat) yang menjelaskan *mengapa kandidat dengan skor tertinggi unggul* dibanding lainnya,
+                            kaitkan dengan kekuatan kompetensinya, dan beri rekomendasi pengembangan talenta.
+                            """
+    
+                            response = client.chat.completions.create(
+                                model="gpt-4o-mini",
+                                messages=[
+                                    {"role": "system", "content": "Kamu adalah HR Data Analyst yang menulis insight singkat dan tajam."},
+                                    {"role": "user", "content": prompt}
+                                ]
+                            )
+    
+                            insight_text = response.choices[0].message.content
+                            st.success(insight_text)
+                    except Exception as e:
+                        st.error(f"Gagal menghasilkan AI insight: {e}")
+    
+                else:
+                    st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
 
 
 
