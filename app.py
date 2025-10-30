@@ -683,19 +683,21 @@ with tab2:
                 # Ambil data dari session_state biar nyambung dari Tab 1
                 selected_ids = st.session_state.get("benchmark_selected", [])
                 custom_tgv_dict = st.session_state.get("custom_tgv_weight", {})
-
-                # Konversi list → PostgreSQL array literal
-                custom_tgv_list_sql = "{" + ",".join(custom_tgv_list) + "}" if custom_tgv_list else None
-
-                # 3️⃣ Run SQL Function
+ 
+                # Konversi Python list -> PostgreSQL array literal
+                
+                selected_ids_sql = "{" + ",".join(selected_ids) + "}" if selected_ids else None
+                custom_tgv_list_sql = "{" + ",".join(f'"{x}"' for x in custom_tgv_list) + "}" if custom_tgv_list else None
+                
                 response = supabase.rpc(
                     "talentmatch_r5_fix",
                     {
-                        "selected_ids": selected_ids,
-                        "custom_tgv_list": custom_tgv_list,
-                        "custom_tgv_weight": custom_tgv_dict  # dikirim sebagai JSONB
+                        "selected_ids": selected_ids_sql,
+                        "custom_tgv_list": custom_tgv_list_sql,
+                        "custom_tgv_weight": custom_tgv_dict  # tetap JSONB
                     }
                 ).execute()
+
     
                 if response.data:
                     df_result = pd.DataFrame(response.data)
