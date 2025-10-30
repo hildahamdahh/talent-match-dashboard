@@ -650,9 +650,9 @@ with tab2:
                 if not sel:
                     st.warning("⚠️ Pilih minimal 1 benchmark employee di tab Role Information terlebih dahulu.")
                     st.stop()
-
+    
                 selected_ids = [s.split(" - ")[0] for s in sel]
-
+    
                 # 1️⃣ Save Job Details
                 ai_data = st.session_state.get("job_details_ai", {})
                 data_insert = {
@@ -663,7 +663,7 @@ with tab2:
                     "created_at": datetime.now().isoformat()
                 }
                 supabase.table("job_details").insert(data_insert).execute()
-
+    
                 # 2️⃣ Mapping to TGV
                 mapping_result = map_job_details_to_tgv(
                     st.session_state["selected_responsibilities"],
@@ -671,7 +671,7 @@ with tab2:
                 )
                 custom_tgv_list = mapping_result.get("tgv_name", [])
                 st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
-
+    
                 # 3️⃣ Run SQL Function
                 response = supabase.rpc(
                     "talentmatch_r4_fix",
@@ -681,16 +681,145 @@ with tab2:
                         "custom_tgv_weight": custom_tgv_dict  # dikirim sebagai JSONB
                     }
                 ).execute()
-
+    
                 if response.data:
                     df_result = pd.DataFrame(response.data)
                     st.success("✅ Talent Match analysis completed!")
                     st.dataframe(df_result, use_container_width=True)
+    
+                    # ==========================================================
+                    # 📊 DASHBOARD INSIGHTS & VISUALIZATION (TAB 2)
+                    # ==========================================================
+                    st.markdown("---")
+                    st.markdown("## 📊 Dashboard Insights & Visualization")
+    
+                    # Konversi numerik
+                    df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
+                    df_result["tgv_match_rate"] = pd.to_numeric(df_result["tgv_match_rate"], errors="coerce")
+    
+                    # 🏆 Ranked Talent List
+                    st.markdown("### 🏆 Ranked Talent List")
+                    top_tgv_df = (
+                        df_result.sort_values(["employee_id", "tgv_match_rate"], ascending=[True, False])
+                        .groupby("employee_id", as_index=False)
+                        .first()
+                        .loc[:, ["employee_id", "fullname", "tgv_name", "tgv_match_rate", "final_match_rate"]]
+                    )
+                    top_tgv_df = top_tgv_df.sort_values(by="final_match_rate", ascending=False).reset_index(drop=True)
+                    st.dataframe(top_tgv_df, use_container_width=True)
+    
+                    # 📈 Match-Rate Distribution
+                    import plotly.express as px
+                    st.markdown("### 📈 Match-Rate Distribution")
+                    fig_hist = px.histogram(
+                        df_result,
+                        x="final_match_rate",
+                        nbins=10,
+                        title="Distribution of Final Match Rates",
+                        labels={"final_match_rate": "Final Match Rate (%)"},
+                        color_discrete_sequence=["#4C78A8"]
+                    )
+                    st.plotly_chart(fig_hist, use_container_width=True)
+    
+                    # 💪 Top Strengths & Gaps Across TGVs
+                    st.markdown("### 💪 Top Strengths & 🚧 Gaps Across TGVs")
+                    tgv_summary = (
+                        df_result.groupby("tgv_name", as_index=False)
+                        .agg(avg_match_rate=("tgv_match_rate", "mean"))
+                        .sort_values("avg_match_rate", ascending=False)
+                    )
+                    fig_bar = px.bar(
+                        tgv_summary,
+                        x="tgv_name",
+                        y="avg_match_rate",
+                        title="Average Match Rate by TGV",
+                        color="avg_match_rate",
+                        color_continuous_scale="Blues",
+                        labels={"avg_match_rate": "Avg Match Rate (%)", "tgv_name": "TGV Name"}
+                    )
+                    st.plotly_chart(fig_bar, use_container_width=True)
+    
+                    # 🕸 Benchmark vs Candidate (Radar Chart)
+                    import plotly.graph_objects as go
+                    st.markdown("### 🕸 Benchmark vs Candidate Comparison")
+                    selected_emp = st.selectbox(
+                        "Pilih kandidat untuk dibandingkan dengan baseline:",
+                        top_tgv_df["fullname"]
+                    )
+                    emp_data = df_result[df_result["fullname"] == selected_emp]
+                    tgv_list = emp_data["tgv_name"].tolist()
+                    emp_score = emp_data["tgv_match_rate"].tolist()
+                    baseline_score = [100] * len(tgv_list)
+    
+                    fig_radar = go.Figure()
+                    fig_radar.add_trace(go.Scatterpolar(
+                        r=baseline_score,
+                        theta=tgv_list,
+                        fill='toself',
+                        name='Benchmark (Ideal)',
+                        line=dict(color='lightgray')
+                    ))
+                    fig_radar.add_trace(go.Scatterpolar(
+                        r=emp_score,
+                        theta=tgv_list,
+                        fill='toself',
+                        name=selected_emp,
+                        line=dict(color='royalblue')
+                    ))
+                    fig_radar.update_layout(
+                        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                        showlegend=True,
+                        title=f"TGV Comparison: {selected_emp} vs Benchmark"
+                    )
+                    st.plotly_chart(fig_radar, use_container_width=True)
+    
+                    # 🧠 AI Summary Insights
+                    st.markdown("### 🧠 AI Summary Insights")
+                    try:
+                        from openai import OpenAI
+                        import os
+    
+                        client = OpenAI(
+                            base_url="https://openrouter.ai/api/v1",
+                            api_key=os.getenv("OPENROUTER_API_KEY")
+                        )
+    
+                        with st.spinner("🧩 Menganalisis hasil match-rate dengan AI..."):
+                            avg_score = df_result["final_match_rate"].mean()
+                            top_name = top_tgv_df.iloc[0]["fullname"]
+                            top_score = top_tgv_df.iloc[0]["final_match_rate"]
+                            strongest_tgv = tgv_summary.iloc[0]["tgv_name"]
+                            weakest_tgv = tgv_summary.iloc[-1]["tgv_name"]
+    
+                            prompt = f"""
+                            Kamu adalah analis HR Data. Berdasarkan hasil scoring berikut:
+                            - Rata-rata match rate: {avg_score:.1f}%
+                            - Top performer: {top_name} ({top_score:.1f}%)
+                            - Kompetensi terkuat: {strongest_tgv}
+                            - Kompetensi terlemah: {weakest_tgv}
+    
+                            Buat ringkasan singkat (3-5 kalimat) yang menjelaskan *mengapa kandidat dengan skor tertinggi unggul* dibanding lainnya,
+                            kaitkan dengan kekuatan kompetensinya, dan beri rekomendasi pengembangan talenta.
+                            """
+    
+                            response = client.chat.completions.create(
+                                model="gpt-4o-mini",
+                                messages=[
+                                    {"role": "system", "content": "Kamu adalah HR Data Analyst yang menulis insight singkat dan tajam."},
+                                    {"role": "user", "content": prompt}
+                                ]
+                            )
+    
+                            insight_text = response.choices[0].message.content
+                            st.success(insight_text)
+                    except Exception as e:
+                        st.error(f"Gagal menghasilkan AI insight: {e}")
+    
                 else:
                     st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
             except Exception as e:
                 st.error(f"❌ Error: {str(e)}")
-
+            
 
 
 
