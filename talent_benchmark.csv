@@ -1,0 +1,169 @@
+employee_id,fullname,nip,job_level,company,area,role_name,department,division,directorate,rating
+EMP100010,Maya Jatmiko Handayani,967930,Senior,PT VASKA Wellness,Plant,HRBP,IT,Operations,HR & Corp Affairs,5
+EMP100011,Fajar Halim,617452,Senior,PT Mandala Distribution Center,Distribution,Finance Officer,Operations,Operations,Technology,5
+EMP100012,Rendra Tri Purnama,457211,Middle,PT Aurora Beauty Indonesia,HQ,Data Analyst,IT,Operations,Commercial,5
+EMP100024,Rendra Candra Maulida,884289,Middle,PT VASKA Wellness,Distribution,Sales Supervisor,IT,Operations,HR & Corp Affairs,5
+EMP100026,Wulan Yudhistira Tamba,926498,Middle,PT Mandala Distribution Center,Distribution,HRBP,HR,Talent Management,HR & Corp Affairs,5
+EMP100039,Budi Adi Permadi,476249,Junior,PT VASKA Wellness,HQ,HRBP,IT,Operations,HR & Corp Affairs,5
+EMP100041,Lestari Maulana,135400,Junior,PT Mandala Distribution Center,HQ,Finance Officer,R&D,Operations,Commercial,5
+EMP100050,Joko Ridwan,411437,Junior,PT Mandala Distribution Center,Plant,HRBP,IT,Talent Management,Technology,5
+EMP100052,Sari Yudhistira Mahendra,740192,Senior,PT Aurora Beauty Indonesia,Store,HRBP,HR,Digital Marketing,HR & Corp Affairs,5
+EMP100054,Nugroho Maulida,239182,Junior,PT VASKA Wellness,Store,HRBP,IT,Talent Management,Commercial,5
+EMP100059,Fajar Dharma Subekti,404880,Senior,PT VASKA Wellness,Plant,Finance Officer,HR,Sales,Commercial,5
+EMP100060,Wulan Maulida,302930,Middle,PT Aurora Beauty Indonesia,Store,Finance Officer,Marketing,Digital Marketing,Technology,5
+EMP100075,Rizki Halim Zulfikar,290052,Junior,PT Lumo Cosmetics Asia,Distribution,Sales Supervisor,Marketing,Talent Management,Technology,5
+EMP100103,Ayu Ginting,310700,Middle,PT Mandala Distribution Center,Distribution,Data Analyst,IT,Digital Marketing,Technology,5
+EMP100114,Vania Fadillah Fauziah,475116,Middle,PT VASKA Wellness,HQ,HRBP,Marketing,Talent Management,HR & Corp Affairs,5
+EMP100186,Rizki Halim,489939,Middle,PT Lumo Cosmetics Asia,Store,Finance Officer,Operations,Product Dev,Technology,5
+EMP100229,Rizki Putra,636376,Senior,PT VASKA Wellness,HQ,Supply Planner,Operations,Talent Management,Technology,5
+EMP100231,Satya Halim Hidayat,732788,Middle,PT Lumo Cosmetics Asia,Store,Brand Executive,IT,Talent Management,Commercial,5
+EMP100273,Rani Wibowo,313299,Middle,PT Mandala Distribution Center,Distribution,Brand Executive,Marketing,Product Dev,HR & Corp Affairs,5
+EMP100313,Budi Qolbi Hidayat,928862,Junior,PT Aurora Beauty Indonesia,Plant,Data Analyst,IT,Sales,Technology,5
+EMP100319,Valdo Anugrah Ramadhan,956018,Middle,PT Mandala Distribution Center,Plant,Sales Supervisor,Finance,Sales,Technology,5
+EMP100326,Rizka Qolbi Mahendra,978884,Junior,PT VASKA Wellness,Store,HRBP,Operations,Operations,Technology,5
+EMP100331,Julia Tri Hartanto,217008,Junior,PT Aurora Beauty Indonesia,Store,Brand Executive,Operations,Product Dev,Commercial,5
+EMP100333,Mahendra Putra,554252,Senior,PT Mandala Distribution Center,Distribution,Sales Supervisor,Operations,Talent Management,Technology,5
+EMP100360,Rizka Rachman Wijaya,652331,Junior,PT Aurora Beauty Indonesia,Store,Sales Supervisor,IT,Digital Marketing,HR & Corp Affairs,5
+EMP100362,Adit Ginting,333391,Senior,PT Mandala Distribution Center,Plant,Brand Executive,Operations,Sales,Technology,5
+EMP100379,Ayu Mahardika Simanjuntak,840629,Junior,PT Lumo Cosmetics Asia,HQ,Sales Supervisor,Marketing,Sales,Technology,5
+EMP100401,Dwi Wijaya Halim,744205,Junior,PT Mandala Distribution Center,HQ,Brand Executive,Marketing,Operations,Commercial,5
+EMP100418,Oktavia Ganesha Fauziah,361013,Middle,PT Mandala Distribution Center,Store,HRBP,Marketing,Sales,HR & Corp Affairs,5
+EMP100426,Dimas Pamungkas,182205,Junior,PT Mandala Distribution Center,HQ,Brand Executive,Marketing,Digital Marketing,Technology,5
+EMP100428,Umar Pamungkas,651268,Junior,PT Mandala Distribution Center,Store,Sales Supervisor,Marketing,Product Dev,HR & Corp Affairs,5
+EMP100460,Joko Sinaga,551128,Middle,PT Mandala Distribution Center,HQ,HRBP,IT,Product Dev,HR & Corp Affairs,5
+EMP100462,Lestari Anggara,802474,Junior,PT Mandala Distribution Center,Plant,Sales Supervisor,R&D,Operations,Commercial,5
+EMP100465,Eko Pamungkas,583584,Middle,PT Aurora Beauty Indonesia,HQ,Sales Supervisor,Finance,Sales,Technology,5
+EMP100466,Gita Nabila Indrawan,483945,Senior,PT VASKA Wellness,Store,Supply Planner,HR,Sales,Commercial,5
+EMP100475,Rizky Setiawan,269930,Junior,PT Aurora Beauty Indonesia,Distribution,HRBP,IT,Sales,Commercial,5
+EMP100485,Galih Aji Saputra,244322,Senior,PT Aurora Beauty Indonesia,Plant,Supply Planner,Operations,Operations,HR & Corp Affairs,5
+EMP100512,Valdo Ginting,923589,Senior,PT Lumo Cosmetics Asia,Store,Data Analyst,R&D,Sales,Technology,5
+EMP100519,Teguh Indrawan,782845,Middle,PT VASKA Wellness,Plant,Sales Supervisor,R&D,Digital Marketing,Commercial,5
+EMP100524,Hadi Nugroho,214245,Senior,PT VASKA Wellness,HQ,Data Analyst,Finance,Sales,HR & Corp Affairs,5
+EMP100536,Eko Gunawan,354263,Middle,PT Mandala Distribution Center,Store,Sales Supervisor,Operations,Talent Management,Technology,5
+EMP100548,Fajar Suharto,452688,Middle,PT Mandala Distribution Center,Store,Data Analyst,Marketing,Digital Marketing,Commercial,5
+EMP100550,Hadi Hartanto,391464,Middle,PT Lumo Cosmetics Asia,Distribution,Finance Officer,IT,Product Dev,HR & Corp Affairs,5
+EMP100554,Intan Saputra,233259,Senior,PT Mandala Distribution Center,Distribution,HRBP,Marketing,Talent Management,Technology,5
+EMP100569,Zaki Anggara,401004,Junior,PT Mandala Distribution Center,Plant,Supply Planner,Finance,Talent Management,Commercial,5
+EMP100571,Yuni Setiawan,809305,Senior,PT Mandala Distribution Center,Distribution,HRBP,Operations,Product Dev,HR & Corp Affairs,5
+EMP100591,Kurnia Ginting,535552,Middle,PT Mandala Distribution Center,Plant,Sales Supervisor,IT,Product Dev,Technology,5
+EMP100605,Dwi Anggara,969799,Senior,PT Aurora Beauty Indonesia,Plant,Brand Executive,Marketing,Talent Management,HR & Corp Affairs,5
+EMP100608,Rani Kurniawan,984426,Senior,PT Aurora Beauty Indonesia,Store,Supply Planner,R&D,Sales,Commercial,5
+EMP100615,Ahmad Halim Nugroho,980688,Junior,PT VASKA Wellness,Distribution,HRBP,Operations,Digital Marketing,Technology,5
+EMP100637,Rani Adi Simanjuntak,701057,Senior,PT Lumo Cosmetics Asia,HQ,HRBP,R&D,Digital Marketing,Commercial,5
+EMP100639,Iman Pratama,299914,Middle,PT VASKA Wellness,HQ,Sales Supervisor,HR,Sales,HR & Corp Affairs,5
+EMP100645,Yoga Iqbal Santoso,928180,Middle,PT Aurora Beauty Indonesia,Distribution,Sales Supervisor,Operations,Sales,Technology,5
+EMP100649,Wahyu Dharma Handayani,181669,Middle,PT VASKA Wellness,Distribution,Brand Executive,Finance,Sales,HR & Corp Affairs,5
+EMP100650,Rifqi Kurniawan,965520,Middle,PT Aurora Beauty Indonesia,Store,Data Analyst,Marketing,Talent Management,Technology,5
+EMP100652,Eko Mahardika Lukman,840203,Junior,PT Lumo Cosmetics Asia,Store,Supply Planner,IT,Digital Marketing,HR & Corp Affairs,5
+EMP100663,Rifqi Jatmiko Indrawan,654291,Junior,PT VASKA Wellness,HQ,Finance Officer,Operations,Product Dev,HR & Corp Affairs,5
+EMP100684,Dian Rahmawati,552672,Junior,PT VASKA Wellness,Store,Supply Planner,Marketing,Product Dev,Commercial,5
+EMP100713,Iman Indrawan,346078,Junior,PT Aurora Beauty Indonesia,Store,Sales Supervisor,HR,Sales,Commercial,5
+EMP100723,Ayu Aji Permadi,601705,Middle,PT Mandala Distribution Center,HQ,Sales Supervisor,Finance,Digital Marketing,Technology,5
+EMP100727,Sari Utama Hidayat,408415,Middle,PT VASKA Wellness,Store,Finance Officer,Finance,Operations,Technology,5
+EMP100739,Prasetyo Halim Wijaya,485042,Junior,PT Mandala Distribution Center,HQ,HRBP,R&D,Talent Management,Commercial,5
+EMP100750,Joko Qolbi Hasibuan,417724,Senior,PT Lumo Cosmetics Asia,Store,Data Analyst,R&D,Operations,HR & Corp Affairs,5
+EMP100758,Dwi Adi Maulana,397584,Senior,PT Lumo Cosmetics Asia,Plant,Finance Officer,Operations,Product Dev,HR & Corp Affairs,5
+EMP100761,Maya Situmorang,471450,Middle,PT VASKA Wellness,HQ,Finance Officer,R&D,Talent Management,Commercial,5
+EMP100785,Umar Fadillah Handayani,252368,Middle,PT Aurora Beauty Indonesia,HQ,Data Analyst,IT,Talent Management,Technology,5
+EMP100803,Maya Kusuma Putra,443934,Middle,PT Lumo Cosmetics Asia,HQ,Sales Supervisor,R&D,Operations,Technology,5
+EMP100830,Hana Herlambang,341835,Senior,PT Mandala Distribution Center,Store,Brand Executive,Operations,Operations,Commercial,5
+EMP100836,Luthfi Simanjuntak,978546,Senior,PT Lumo Cosmetics Asia,Distribution,Brand Executive,Operations,Product Dev,Commercial,5
+EMP100881,Kartika Purnama,563394,Senior,PT Lumo Cosmetics Asia,Plant,Sales Supervisor,R&D,Operations,HR & Corp Affairs,5
+EMP100909,Valdo Wijaya Syahputra,258027,Senior,PT Aurora Beauty Indonesia,Distribution,HRBP,Marketing,Talent Management,Technology,5
+EMP100924,Julia Yudhistira Lukman,989748,Senior,PT Aurora Beauty Indonesia,Distribution,Sales Supervisor,R&D,Product Dev,Commercial,5
+EMP100926,Intan Candra Rahmawati,341655,Senior,PT VASKA Wellness,HQ,Sales Supervisor,Finance,Talent Management,Technology,5
+EMP100958,Arif Wijaya Pamungkas,325441,Middle,PT Mandala Distribution Center,Store,Brand Executive,Marketing,Digital Marketing,Commercial,5
+EMP100962,Kartika Wibowo,465320,Senior,PT Mandala Distribution Center,Plant,Sales Supervisor,Finance,Product Dev,HR & Corp Affairs,5
+EMP100963,Ahmad Permadi,841211,Senior,PT Lumo Cosmetics Asia,HQ,HRBP,Marketing,Digital Marketing,HR & Corp Affairs,5
+EMP100964,Cahyo Ginting,759272,Middle,PT VASKA Wellness,Distribution,HRBP,Marketing,Talent Management,Commercial,5
+EMP100972,Dian Lukman,620442,Middle,PT Mandala Distribution Center,HQ,Data Analyst,Marketing,Talent Management,Technology,5
+EMP100987,Prasetyo Purnama,105970,Senior,PT VASKA Wellness,Plant,Brand Executive,Marketing,Digital Marketing,Commercial,5
+EMP100988,Prasetyo Zulfikar,195840,Middle,PT VASKA Wellness,HQ,Data Analyst,R&D,Product Dev,HR & Corp Affairs,5
+EMP100990,Oka Ananda,789945,Junior,PT Mandala Distribution Center,Plant,Supply Planner,Marketing,Operations,Technology,5
+EMP101007,Prasetyo Subekti,794481,Senior,PT Mandala Distribution Center,HQ,Data Analyst,HR,Talent Management,Technology,5
+EMP101009,Lestari Dharma Herlambang,708873,Junior,PT Mandala Distribution Center,Plant,Finance Officer,Finance,Product Dev,Technology,5
+EMP101055,Yoga Candra Hartanto,296785,Middle,PT VASKA Wellness,Distribution,Sales Supervisor,Operations,Product Dev,HR & Corp Affairs,5
+EMP101065,Nabila Kusuma Gunawan,570985,Senior,PT Lumo Cosmetics Asia,Plant,Supply Planner,Finance,Digital Marketing,Technology,5
+EMP101082,Rani Permadi,212470,Junior,PT Aurora Beauty Indonesia,Store,Brand Executive,Operations,Talent Management,Technology,5
+EMP101091,Ari Saputra Pamungkas,393266,Junior,PT Aurora Beauty Indonesia,HQ,Sales Supervisor,R&D,Sales,Commercial,5
+EMP101098,Utami Firmansyah,271832,Middle,PT Mandala Distribution Center,Store,Finance Officer,IT,Product Dev,Technology,5
+EMP101103,Wulan Lestari Saputra,166683,Senior,PT VASKA Wellness,Store,Sales Supervisor,Finance,Product Dev,Technology,5
+EMP101123,Dian Kurniawan,810966,Junior,PT VASKA Wellness,Store,Data Analyst,R&D,Product Dev,HR & Corp Affairs,5
+EMP101148,Ahmad Hartanto,139833,Middle,PT Aurora Beauty Indonesia,HQ,Sales Supervisor,IT,Sales,HR & Corp Affairs,5
+EMP101154,Gita Aji Simanjuntak,375738,Junior,PT Lumo Cosmetics Asia,HQ,Supply Planner,R&D,Operations,HR & Corp Affairs,5
+EMP101159,Vania Maulana,265389,Senior,PT Aurora Beauty Indonesia,Distribution,Finance Officer,Finance,Sales,Commercial,5
+EMP101167,Rama Utami,659007,Middle,PT Mandala Distribution Center,HQ,Finance Officer,R&D,Sales,HR & Corp Affairs,5
+EMP101203,Dwi Lestari,829065,Senior,PT Mandala Distribution Center,HQ,Sales Supervisor,IT,Talent Management,HR & Corp Affairs,5
+EMP101225,Zahra Hidayat,150409,Middle,PT VASKA Wellness,Store,HRBP,Finance,Sales,Technology,5
+EMP101226,Yoga Erlangga Mahendra,405193,Junior,PT VASKA Wellness,Distribution,Brand Executive,R&D,Operations,Commercial,5
+EMP101234,Luthfi Ananda,818082,Middle,PT VASKA Wellness,HQ,Finance Officer,IT,Operations,Technology,5
+EMP101237,Zahra Ridwan,301932,Middle,PT VASKA Wellness,Distribution,Supply Planner,R&D,Sales,Technology,5
+EMP101248,Cahyo Lestari,215777,Junior,PT Lumo Cosmetics Asia,HQ,Finance Officer,IT,Digital Marketing,Commercial,5
+EMP101250,Iman Wijaya,557794,Junior,PT Mandala Distribution Center,Store,Data Analyst,IT,Operations,HR & Corp Affairs,5
+EMP101256,Ayu Pratama,824113,Junior,PT Aurora Beauty Indonesia,Store,Supply Planner,Marketing,Talent Management,Commercial,5
+EMP101267,Rani Herlambang,329243,Junior,PT Aurora Beauty Indonesia,Store,Brand Executive,IT,Sales,HR & Corp Affairs,5
+EMP101286,Zaki Adi Permadi,180926,Senior,PT Aurora Beauty Indonesia,Plant,Data Analyst,IT,Talent Management,Technology,5
+EMP101293,Citra Suharto,294810,Junior,PT Mandala Distribution Center,Store,Finance Officer,Finance,Sales,Technology,5
+EMP101320,Fajar Tamba,226573,Middle,PT Lumo Cosmetics Asia,Store,Sales Supervisor,Operations,Talent Management,Technology,5
+EMP101343,Anisa Anugrah Saputra,941394,Middle,PT Lumo Cosmetics Asia,Distribution,Finance Officer,HR,Talent Management,HR & Corp Affairs,5
+EMP101347,Utami Adi Handayani,159491,Middle,PT VASKA Wellness,Plant,Finance Officer,HR,Product Dev,HR & Corp Affairs,5
+EMP101350,Bella Dharma Maulida,942075,Junior,PT VASKA Wellness,HQ,Finance Officer,IT,Product Dev,Commercial,5
+EMP101362,Valdo Kusuma,126509,Middle,PT Aurora Beauty Indonesia,Store,Supply Planner,Operations,Digital Marketing,Commercial,5
+EMP101367,Ahmad Nugroho,994183,Middle,PT Mandala Distribution Center,HQ,Data Analyst,IT,Sales,HR & Corp Affairs,5
+EMP101379,Oka Pamungkas,398639,Junior,PT Lumo Cosmetics Asia,Store,Sales Supervisor,R&D,Digital Marketing,Technology,5
+EMP101396,Gita Ginting,406239,Junior,PT Lumo Cosmetics Asia,Store,Sales Supervisor,IT,Talent Management,Commercial,5
+EMP101428,Umar Wibowo,102844,Senior,PT Aurora Beauty Indonesia,HQ,Data Analyst,IT,Sales,HR & Corp Affairs,5
+EMP101439,Oka Anugrah Hidayat,316747,Middle,PT Aurora Beauty Indonesia,Store,Sales Supervisor,Operations,Digital Marketing,Commercial,5
+EMP101446,Fitri Adi Pratomo,779300,Junior,PT VASKA Wellness,Store,HRBP,Finance,Operations,HR & Corp Affairs,5
+EMP101451,Bayu Kusuma,981956,Junior,PT Aurora Beauty Indonesia,HQ,Brand Executive,Finance,Operations,Commercial,5
+EMP101460,Zahra Fadillah Saputra,748578,Junior,PT Aurora Beauty Indonesia,Store,HRBP,R&D,Digital Marketing,Technology,5
+EMP101484,Oka Qolbi Mahendra,852731,Senior,PT Aurora Beauty Indonesia,Distribution,Brand Executive,Marketing,Talent Management,HR & Corp Affairs,5
+EMP101495,Gita Yudhistira Maulida,202520,Middle,PT Lumo Cosmetics Asia,Store,Data Analyst,Operations,Operations,Technology,5
+EMP101508,Iman Zulfikar,940310,Middle,PT Lumo Cosmetics Asia,Plant,Sales Supervisor,R&D,Product Dev,HR & Corp Affairs,5
+EMP101525,Rani Aji Indrawan,695961,Middle,PT Lumo Cosmetics Asia,Plant,Finance Officer,Operations,Digital Marketing,HR & Corp Affairs,5
+EMP101536,Indra Syahputra,690197,Junior,PT VASKA Wellness,Store,Sales Supervisor,Operations,Talent Management,Technology,5
+EMP101547,Iman Maulana,736928,Middle,PT Mandala Distribution Center,Distribution,Sales Supervisor,Operations,Product Dev,Commercial,5
+EMP101550,Ayunda Firmansyah,187663,Senior,PT Mandala Distribution Center,HQ,Finance Officer,Operations,Talent Management,HR & Corp Affairs,5
+EMP101551,Hana Saputra Pamungkas,618057,Junior,PT VASKA Wellness,Distribution,Sales Supervisor,R&D,Operations,Technology,5
+EMP101559,Hana Lestari Wijaya,776080,Junior,PT VASKA Wellness,Store,Data Analyst,HR,Operations,Commercial,5
+EMP101570,Putri Zulfikar Lukman,685119,Senior,PT Aurora Beauty Indonesia,Plant,Sales Supervisor,R&D,Sales,Commercial,5
+EMP101573,Citra Aji Sinaga,568044,Middle,PT Aurora Beauty Indonesia,Store,Data Analyst,IT,Product Dev,HR & Corp Affairs,5
+EMP101578,Adit Rahmawati,210878,Senior,PT VASKA Wellness,Store,Finance Officer,Operations,Talent Management,HR & Corp Affairs,5
+EMP101587,Rizki Dharma Lukman,907379,Middle,PT VASKA Wellness,Plant,Finance Officer,HR,Sales,HR & Corp Affairs,5
+EMP101590,Citra Nugroho,206900,Junior,PT Lumo Cosmetics Asia,HQ,Brand Executive,Operations,Talent Management,Technology,5
+EMP101591,Andi Situmorang,405627,Junior,PT Lumo Cosmetics Asia,HQ,Data Analyst,Operations,Digital Marketing,Technology,5
+EMP101599,Fitri Aji Permadi,931175,Senior,PT VASKA Wellness,Store,Brand Executive,IT,Operations,Technology,5
+EMP101603,Andi Jatmiko Hidayat,663627,Senior,PT Lumo Cosmetics Asia,Distribution,Finance Officer,Operations,Digital Marketing,HR & Corp Affairs,5
+EMP101605,Ahmad Nabila Wijaya,284787,Senior,PT Mandala Distribution Center,Store,Data Analyst,HR,Operations,Technology,5
+EMP101613,Mahendra Saputra,606176,Junior,PT VASKA Wellness,Plant,HRBP,Finance,Product Dev,Technology,5
+EMP101632,Putri Ginting,167042,Senior,PT Mandala Distribution Center,Plant,Supply Planner,IT,Digital Marketing,HR & Corp Affairs,5
+EMP101675,Mahendra Indrawan,631789,Middle,PT Aurora Beauty Indonesia,Store,HRBP,Finance,Digital Marketing,Technology,5
+EMP101684,Bella Utama Ramadhan,632379,Middle,PT Lumo Cosmetics Asia,Distribution,Brand Executive,Finance,Product Dev,Technology,5
+EMP101686,Prasetyo Suharto,396418,Senior,PT Lumo Cosmetics Asia,Plant,Brand Executive,HR,Product Dev,Commercial,5
+EMP101700,Nabila Indrawan,139865,Senior,PT VASKA Wellness,HQ,Sales Supervisor,Operations,Operations,HR & Corp Affairs,5
+EMP101712,Luthfi Nugroho,516552,Junior,PT VASKA Wellness,Plant,Data Analyst,Finance,Digital Marketing,Technology,5
+EMP101718,Intan Kurniawan,726281,Middle,PT Lumo Cosmetics Asia,Store,HRBP,IT,Digital Marketing,HR & Corp Affairs,5
+EMP101764,Luthfi Jatmiko Firmansyah,838276,Junior,PT VASKA Wellness,Plant,Finance Officer,R&D,Product Dev,Commercial,5
+EMP101771,Zahra Dharma Firmansyah,917919,Middle,PT VASKA Wellness,Distribution,HRBP,Finance,Sales,Commercial,5
+EMP101781,Bella Candra Zulfikar,562501,Senior,PT Lumo Cosmetics Asia,HQ,Finance Officer,R&D,Talent Management,Technology,5
+EMP101787,Zaki Subekti,691605,Middle,PT Aurora Beauty Indonesia,Plant,Finance Officer,Operations,Sales,Technology,5
+EMP101792,Nadia Kusuma,151829,Senior,PT Mandala Distribution Center,Plant,Finance Officer,IT,Operations,HR & Corp Affairs,5
+EMP101802,Tania Wijaya Lukman,800688,Junior,PT Mandala Distribution Center,Distribution,HRBP,Finance,Digital Marketing,Commercial,5
+EMP101809,Dinda Suharto,971179,Senior,PT Aurora Beauty Indonesia,HQ,HRBP,R&D,Product Dev,Commercial,5
+EMP101817,Luthfi Pramudita Pradana,381920,Middle,PT Aurora Beauty Indonesia,HQ,Data Analyst,R&D,Sales,Technology,5
+EMP101828,Eko Halim,839190,Senior,PT Mandala Distribution Center,Distribution,Sales Supervisor,Marketing,Talent Management,HR & Corp Affairs,5
+EMP101848,Yuni Pamungkas,122715,Middle,PT Aurora Beauty Indonesia,HQ,Supply Planner,IT,Operations,HR & Corp Affairs,5
+EMP101853,Kurnia Suharto,409000,Senior,PT Aurora Beauty Indonesia,HQ,Brand Executive,Marketing,Product Dev,HR & Corp Affairs,5
+EMP101858,Intan Candra Siregar,669233,Senior,PT Mandala Distribution Center,Store,Supply Planner,HR,Sales,Commercial,5
+EMP101862,Rendra Sinaga,468344,Middle,PT Aurora Beauty Indonesia,Store,Data Analyst,Operations,Digital Marketing,Technology,5
+EMP101878,Teguh Herlambang,948709,Middle,PT Aurora Beauty Indonesia,Store,Finance Officer,Operations,Operations,Commercial,5
+EMP101890,Prasetyo Qolbi Maulida,904270,Senior,PT Lumo Cosmetics Asia,HQ,Brand Executive,Marketing,Sales,HR & Corp Affairs,5
+EMP101891,Budi Nugroho,718542,Middle,PT VASKA Wellness,Plant,Sales Supervisor,HR,Talent Management,Commercial,5
+EMP101931,Ayu Sinaga,587405,Middle,PT VASKA Wellness,Plant,HRBP,IT,Product Dev,Commercial,5
+EMP101963,Zahra Mahendra,621989,Senior,PT Mandala Distribution Center,Distribution,Brand Executive,HR,Product Dev,Commercial,5
+EMP101970,Rizky Hidayat,668690,Middle,PT VASKA Wellness,Store,Data Analyst,Finance,Sales,HR & Corp Affairs,5
+EMP101973,Putri Siregar,324933,Senior,PT Aurora Beauty Indonesia,Distribution,Data Analyst,Finance,Product Dev,Technology,5
+EMP101974,Yoga Dharma Salsabila,392195,Middle,PT VASKA Wellness,Store,Data Analyst,Marketing,Product Dev,HR & Corp Affairs,5
+EMP101986,Wahyu Pratomo,889823,Junior,PT VASKA Wellness,Plant,Finance Officer,IT,Digital Marketing,Technology,5
+DUP1942,Dewi Fadillah Hidayat,325441,Middle,PT Mandala Distribution Center,Store,Brand Executive,Marketing,Digital Marketing,Commercial,5
+DUP9801,Ayu Kusuma Santoso,889823,Junior,PT VASKA Wellness,Plant,Finance Officer,IT,Digital Marketing,Technology,5
