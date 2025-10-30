@@ -142,67 +142,66 @@ with tab1:
 
 
     # ==========================================================
-# 🧠 AI JOB PROFILE OVERVIEW (OpenRouter)
-# ==========================================================
-    def generate_job_profile(role_name, job_level, role_purpose):
-        """Generate AI-based Job Profile Overview using OpenRouter"""
-        try:
-            OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
-        except Exception:
-            st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
-            return None
-
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
-        "X-Title": "Talent Match Intelligence",
-        "Content-Type": "application/json",
-    }
-
-    prompt = f"""
-    You are an HR Talent Intelligence Assistant.
-    Generate a concise, structured Job Profile Overview for a {job_level} {role_name}.
-    
-    Include exactly these sections:
-    1️⃣ Job Requirements
-    2️⃣ Job Description
-    3️⃣ Key Competencies
-    
-    Context: {role_purpose}
-    """
-
-    payload = {
-        "model": "openai/gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "You generate concise job profiles for HR professionals."},
-            {"role": "user", "content": prompt}
-        ]
-    }
-
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers=headers,
-        data=json.dumps(payload)
-    )
-
-    if response.status_code == 200:
-        return response.json()["choices"][0]["message"]["content"]
-    else:
-        return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
-        
-    # ==========================================================
     # 🚀 Generate Job Profile & Variable Score
     # ==========================================================
     st.markdown("---")
-
+    
     if "job_generated" not in st.session_state:
         st.session_state.job_generated = False
     if "df_result" not in st.session_state:
         st.session_state.df_result = None
     if "top_tgv_df" not in st.session_state:
         st.session_state.top_tgv_df = None
-
-
+    
+    
+    # 🔹 Fungsi AI Job Profile Generator (OpenRouter)
+    def generate_job_profile(role_name, job_level, role_purpose):
+        try:
+            OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+        except Exception:
+            st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+            return None
+    
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "HTTP-Referer": "https://talent-match-intelligence.streamlit.app",
+            "X-Title": "Talent Match Intelligence",
+            "Content-Type": "application/json",
+        }
+    
+        prompt = f"""
+        You are an HR Talent Intelligence Assistant.
+        Generate a concise, structured Job Profile Overview for a {job_level} {role_name}.
+        Include:
+        1️⃣ Job Requirements
+        2️⃣ Job Description
+        3️⃣ Key Competencies
+        Context: {role_purpose}
+        """
+    
+        payload = {
+            "model": "openai/gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You generate concise job profiles for HR professionals."},
+                {"role": "user", "content": prompt}
+            ]
+        }
+    
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(payload)
+        )
+    
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            return f"⚠️ Error dari OpenRouter: {response.status_code} - {response.text}"
+    
+    
+    # ==========================================================
+    # 🚀 GENERATE JOB PROFILE (AI) + VARIABLE SCORE (RPC)
+    # ==========================================================
     if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
         if not (selected and len(selected) > 0):
             st.warning("⚠️ Pilih minimal 1 benchmark employee terlebih dahulu.")
@@ -261,6 +260,7 @@ with tab1:
                         st.warning("⚠️ Tidak ada data ditemukan untuk employee yang dipilih.")
                 except Exception as e:
                     st.error(f"Gagal menjalankan query: {e}")
+
                 
    # ==========================================================
     # 🧠 STEP 4: Dashboard Insights & Visualization
