@@ -14,7 +14,7 @@ This repository contains all main source files used to build the **Talent Match 
 | `talentmatch_r5_fix` | Final PostgreSQL function used in Supabase |
 | `join_allemployees_sql` | SQL script to join employee datasets |
 | `employee_tv_scores.csv` | Employee-level Talent Variable data |
-| `talent_benchmark.csv` | Benchmark data for top performers |
+| `talent_benchmark.csv` | Benchmark data for top performers for app.py streamlit (input) |
 | `requirements.txt` | Python dependencies for running the app |
 
 ---
@@ -27,7 +27,8 @@ git clone https://github.com/your-username/talent-match-intelligence.git
 cd talent-match-intelligence```
 
 ### 2. Create a Virtual Environment
-```python3 -m venv venv
+```bash
+python3 -m venv venv
 source venv/bin/activate   # For Mac/Linux
 venv\Scripts\activate      # For Windows```
 
