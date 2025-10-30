@@ -144,13 +144,13 @@ with tab1:
     # ==========================================================
 # 🧠 AI JOB PROFILE OVERVIEW (OpenRouter)
 # ==========================================================
-def generate_job_profile(role_name, job_level, role_purpose):
-    """Generate AI-based Job Profile Overview using OpenRouter"""
-    try:
-        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
-    except Exception:
-        st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
-        return None
+    def generate_job_profile(role_name, job_level, role_purpose):
+        """Generate AI-based Job Profile Overview using OpenRouter"""
+        try:
+            OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+        except Exception:
+            st.error("❌ OPENROUTER_API_KEY belum diset di secrets.")
+            return None
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -201,6 +201,7 @@ def generate_job_profile(role_name, job_level, role_purpose):
         st.session_state.df_result = None
     if "top_tgv_df" not in st.session_state:
         st.session_state.top_tgv_df = None
+
 
     if st.button("✨ Generate AI-Based Job Profile & Variable Score"):
         if not (selected and len(selected) > 0):
