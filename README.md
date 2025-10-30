@@ -76,7 +76,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-**Data Analysis (Google Colab)**
+**📁 Data Analysis (Google Colab)**
 All exploratory data analysis and visualization of Top Performer insights are conducted in a Google Colab notebook.
 The notebook includes:
 Descriptive statistics
