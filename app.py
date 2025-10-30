@@ -8,7 +8,7 @@ Original file is located at
 """
 
 # -*- coding: utf-8 -*-
-"""Talent Match Intelligence Dashboard (v3.1_fixed_rpc)"""
+"""Talent Match Intelligence Dashboard (by Hilda Hamdah H)"""
 
 import streamlit as st
 from supabase import create_client, Client
