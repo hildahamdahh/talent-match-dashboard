@@ -22,7 +22,7 @@ This repository contains all main source files used to build the **Talent Match 
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/talent-match-intelligence.git
+git clone https://github.com/hildahamdahh/talent-match-dashboard/tree/main
 cd talent-match-intelligence
 ```
 
@@ -52,7 +52,24 @@ supabase = create_client(url, key)
 ⚠️ You must upload both employee_tv_scores.csv and its duplicate named all_employee in Supabase.  
 The employee_tv_scores table is used for benchmark calculation (top performers), while all_employee is used as the comparison dataset for the scoring process.  
 
-### 4. (Optional) Run Locally
+### 4. AI Integration (OpenRouter)
+The dashboard uses OpenRouter API to generate AI-powered insights and explanations.  
+To enable this feature:  
+a. Create an account on OpenRouter.ai.  
+b. Generate an API key from your profile settings.  
+c. In Streamlit Cloud, go to App Settings → Secrets, and add:  
+```
+OPENROUTER_API_KEY = "your-openrouter-api-key"
+```
+d. The app will automatically load this key using:
+```python
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=st.secrets["OPENROUTER_API_KEY"]
+)
+```
+
+### 5. (Optional) Run Locally
 If you prefer to test the app on your local machine:
 ```bash
 pip install -r requirements.txt
