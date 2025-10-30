@@ -675,10 +675,13 @@ with tab2:
                 )
                 custom_tgv_list = mapping_result.get("tgv_name", [])
                 st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
-                
+
+                # ✅ Simpan hasil ke session_state (biar kebaca di RPC)
+                st.session_state["custom_tgv_list"] = custom_tgv_list
+
                 # Ambil data dari session_state biar nyambung dari Tab 1
                 selected_ids = st.session_state.get("benchmark_selected", [])
-                custom_tgv_list = st.session_state.get("custom_tgv_list", [])
+                #custom_tgv_list = st.session_state.get("custom_tgv_list", [])
                 custom_tgv_dict = st.session_state.get("custom_tgv_weight", {})
 
                 # 3️⃣ Run SQL Function
