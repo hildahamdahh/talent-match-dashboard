@@ -271,8 +271,8 @@ with tab1:
                             "talentmatch_r4_fix",
                             {
                                 "selected_ids": selected_ids,
-                                "custom_tgv_list": custom_tgv_list,
-                                "custom_tgv_weight": custom_tgv_weight  # dikirim sebagai JSONB
+                                "custom_tgv_list": None,
+                                "custom_tgv_weight": custom_tgv_dict  # dikirim sebagai JSONB
                             }).execute()
                     
                     if result.data:
