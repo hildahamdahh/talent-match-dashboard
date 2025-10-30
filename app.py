@@ -680,8 +680,8 @@ with tab2:
                     "talentmatch_r4_fix",
                     {
                         "selected_ids": selected_ids,
-                        "custom_tgv_list": custom_tgv_list,
-                        "custom_tgv_weight": st.session_state.get("custom_tgv_weight", None)  # dikirim sebagai JSONB
+                        "custom_tgv_list": custom_tgv_list
+                        #"custom_tgv_weight": st.session_state.get("custom_tgv_weight", None)  # dikirim sebagai JSONB
                     }
                 ).execute()
     
