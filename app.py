@@ -156,7 +156,7 @@ with tab1:
         else:
             selected_ids = [s.split(" - ")[0] for s in selected]
             try:
-                result = supabase.rpc("talentmatch_r2_fix", {"selected_ids": selected_ids}).execute()
+                result = supabase.rpc("talentmatch_r3_fix", {"selected_ids": selected_ids}).execute()
                 if result.data:
                     df_result = pd.DataFrame(result.data)
                     desired_cols = [
@@ -371,7 +371,6 @@ with tab2:
         unsafe_allow_html=True
     )
 
-    # ====== CONTAINER ======
     st.markdown('<div class="job-details-container"><div class="job-details-box">', unsafe_allow_html=True)
 
     st.subheader("3️⃣ Job Details (AI Suggestions + Editable Lists)")
@@ -435,14 +434,12 @@ with tab2:
             st.text(content)
             return None
 
-
-    # --- Generate AI Details (cached per Role & Job Level) ---
+    # ====== AI CACHE: only regenerate if role/job level changed ======
     if "job_details_ai" not in st.session_state:
         st.session_state["job_details_ai"] = None
         st.session_state["last_role"] = None
         st.session_state["last_job_level"] = None
-    
-    # hanya generate ulang kalau role/job level berubah
+
     if (
         st.session_state["job_details_ai"] is None
         or st.session_state["last_role"] != selected_role
@@ -459,13 +456,11 @@ with tab2:
     else:
         ai_details = st.session_state["job_details_ai"]
 
-
-
-    # ====== Initialize Session States ======
+    # ====== Initialize Lists ======
     st.session_state.setdefault("selected_responsibilities", [])
     st.session_state.setdefault("selected_competencies", [])
 
-    # ====== Helper Function: Render Section ======
+    # ====== Helper: Editable Section ======
     def render_detail_section(title, key, ai_options):
         st.markdown(f"#### {title}")
 
@@ -482,7 +477,6 @@ with tab2:
                 if selected and selected not in st.session_state[key]:
                     st.session_state[key].append(selected)
 
-        # Show existing items with edit/delete icons
         for i, item in enumerate(st.session_state[key]):
             col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
             with col1:
@@ -498,16 +492,33 @@ with tab2:
                     st.session_state[key].pop(i)
                     st.experimental_rerun()
 
-    # ====== Render Both Sections ======
     st.markdown("---")
     render_detail_section("Key Responsibilities", "selected_responsibilities", ai_details["responsibilities"])
     st.markdown("---")
     render_detail_section("Key Competencies", "selected_competencies", ai_details["competencies"])
-
-
-    # Close center container
     st.markdown("</div></div>", unsafe_allow_html=True)
 
+    # ====== Helper: Mapping AI → TGV Domain ======
+    def map_job_details_to_tgv(responsibilities, competencies):
+        tgv_mapping = {
+            "Leadership": "Leadership & Influence",
+            "Team": "Social Orientation & Collaboration",
+            "Creative": "Creativity & Innovation Orientation",
+            "Adapt": "Adaptability & Stress Tolerance",
+            "Problem": "Cognitive Complexity & Problem-Solving",
+            "Motivat": "Motivation & Drive",
+            "Reliable": "Conscientiousness & Reliability",
+            "Culture": "Cultural & Values Urgency",
+        }
+
+        mapped_tgv = []
+        for c in competencies:
+            for keyword, tgv in tgv_mapping.items():
+                if keyword.lower() in c.lower():
+                    mapped_tgv.append(tgv)
+
+        mapped_tgv = list(set(mapped_tgv)) if mapped_tgv else competencies
+        return {"tgv_name": mapped_tgv}
 
     # ==========================================================
     # 💾 SAVE & RUN TALENT MATCH
@@ -515,29 +526,41 @@ with tab2:
     if st.button("💾 Save & Run Talent Match", key="run_talent_match"):
         with st.spinner("Running Talent Match analysis..."):
             try:
-                # ambil benchmark dari session_state
                 sel = st.session_state.get("benchmark_selected", [])
                 if not sel:
                     st.warning("⚠️ Pilih minimal 1 benchmark employee di tab Role Information terlebih dahulu.")
                     st.stop()
-    
-                # extract employee_id (contoh: 'EMP001 - Nama' → ambil 'EMP001')
+
                 benchmark_ids = [s.split(" - ")[0] for s in sel]
-    
-                # ambil daftar TGV custom (sementara pakai hasil competencies)
-                selected_tgv_list = st.session_state.get("selected_competencies", [])
-                custom_tgv_list = {"tgv_list": selected_tgv_list} if selected_tgv_list else None
-    
-                # panggil RPC (ganti nama function sesuai SQL kamu)
+
+                # 1️⃣ Save Job Details
+                ai_data = st.session_state.get("job_details_ai", {})
+                data_insert = {
+                    "role_name": selected_role,
+                    "job_level": selected_job_level,
+                    "responsibilities": st.session_state["selected_responsibilities"],
+                    "competencies": st.session_state["selected_competencies"],
+                    "created_at": datetime.now().isoformat()
+                }
+                supabase.table("job_details").insert(data_insert).execute()
+
+                # 2️⃣ Mapping to TGV
+                mapping_result = map_job_details_to_tgv(
+                    st.session_state["selected_responsibilities"],
+                    st.session_state["selected_competencies"]
+                )
+                custom_tgv_list = mapping_result.get("tgv_name", [])
+                st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
+
+                # 3️⃣ Run SQL Function
                 response = supabase.rpc(
-                    "talentmatch_r2_fix",
+                    "talentmatch_r3_fix",
                     {
                         "benchmark_ids": benchmark_ids,
                         "custom_tgv_list": custom_tgv_list
                     }
                 ).execute()
-    
-                # tampilkan hasil
+
                 if response.data:
                     df_result = pd.DataFrame(response.data)
                     st.success("✅ Talent Match analysis completed!")
@@ -546,6 +569,7 @@ with tab2:
                     st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
             except Exception as e:
                 st.error(f"❌ Error: {str(e)}")
+
 
 
 
