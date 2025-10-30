@@ -16,6 +16,8 @@ import pandas as pd
 import plotly.express as px
 from openai import OpenAI
 import requests, json, re, os
+from datetime import datetime
+
 
 # ==========================================================
 # 🔗 KONEKSI SUPABASE
