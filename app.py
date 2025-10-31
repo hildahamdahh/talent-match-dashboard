@@ -640,11 +640,11 @@ with tab2:
                 clean_json = re.sub(r"```json|```", "", content).strip()
                 return json.loads(clean_json)
             except Exception as e:
-                st.error(f"⚠️ Gagal parsing hasil mapping: {e}")
+                st.error(f"Gagal parsing hasil mapping: {e}")
                 st.text(content)
                 return None
         else:
-            st.error(f"⚠️ Error dari OpenRouter: {response.status_code}")
+            st.error(f"Error dari OpenRouter: {response.status_code}")
             return None
     
     # ==========================================================
@@ -661,7 +661,7 @@ with tab2:
                 selected_ids_clean = [s.split(" - ")[0] for s in st.session_state.get("benchmark_selected", [])]
 
     
-                # 1️⃣ Save Job Details
+                # Save Job Details
                 ai_data = st.session_state.get("job_details_ai", {})
                 data_insert = {
                     "role_name": selected_role,
@@ -672,7 +672,7 @@ with tab2:
                 }
                 supabase.table("job_details").insert(data_insert).execute()
     
-                # 2️⃣ Mapping to TGV
+                # Mapping to TGV
                 mapping_result = map_job_details_to_tgv(
                     st.session_state["selected_responsibilities"],
                     st.session_state["selected_competencies"]
@@ -681,7 +681,7 @@ with tab2:
                 st.info(f"🔍 Kompetensi domain relevan: {', '.join(custom_tgv_list)}")
 
 
-                # ✅ Simpan hasil ke session_state (biar kebaca di RPC)
+                # Simpan hasil ke session_state (biar kebaca di RPC)
                 st.session_state["custom_tgv_list"] = custom_tgv_list
 
                 # Ambil data dari session_state biar nyambung dari Tab 1
@@ -699,14 +699,14 @@ with tab2:
     
                 if response.data:
                     df_result = pd.DataFrame(response.data)
-                    st.success("✅ Talent Match analysis completed!")
+                    st.success("Talent Match analysis completed!")
                     #st.dataframe(df_result, use_container_width=True)
     
                     # ==========================================================
-                    # 📊 DASHBOARD INSIGHTS & VISUALIZATION (TAB 2)
+                    # DASHBOARD INSIGHTS & VISUALIZATION (TAB 2)
                     # ==========================================================
                     st.markdown("---")
-                    st.markdown("## 📊 Dashboard Insights & Visualization")
+                    st.markdown("## Dashboard Insights & Visualization")
     
                     # Konversi numerik
                     df_result["final_match_rate"] = pd.to_numeric(df_result["final_match_rate"], errors="coerce")
@@ -808,15 +808,16 @@ with tab2:
                             weakest_tgv = tgv_summary.iloc[-1]["tgv_name"]
     
                             prompt = f"""
-                            Kamu adalah analis HR Data. Berdasarkan hasil scoring berikut:
-                            - Rata-rata match rate: {avg_score:.1f}%
-                            - Top performer: {top_name} ({top_score:.1f}%)
-                            - Kompetensi terkuat: {strongest_tgv}
-                            - Kompetensi terlemah: {weakest_tgv}
-    
-                            Buat ringkasan singkat (3-5 kalimat) yang menjelaskan *mengapa kandidat dengan skor tertinggi unggul* dibanding lainnya,
-                            kaitkan dengan kekuatan kompetensinya, dan beri rekomendasi pengembangan talenta.
+                            You are an HR Data Analyst. Based on the scoring results:
+                            - Average Match Rate: {avg_score:.1f}%
+                            - Top Performer: {top_name} ({top_score:.1f}%)
+                            - Strongest Competency: {strongest_tgv}
+                            - Weakest Competency: {weakest_tgv}
+            
+                            Write a 3–5 sentence summary explaining why the top performer excels compared to others,
+                            linking it to their strengths and suggesting brief talent development recommendations.
                             """
+
     
                             response = client.chat.completions.create(
                                 model="gpt-4o-mini",
@@ -832,9 +833,9 @@ with tab2:
                         st.error(f"Gagal menghasilkan AI insight: {e}")
     
                 else:
-                    st.warning("⚠️ Tidak ada hasil ditemukan dari scoring.")
+                    st.warning("Tidak ada hasil ditemukan dari scoring.")
             except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+                st.error(f"Error: {str(e)}")
 
 
 
