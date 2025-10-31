@@ -15,7 +15,7 @@ This repository contains all main source files used to build the **Talent Match 
 | `join_allemployees_sql` | SQL script to join employee datasets |
 | `employee_tv_scores.csv` | Employee-level Talent Variable data |
 | `requirements.txt` | Python dependencies for running the app |
-| `Talent Variables (TV) and Talent Group Variables (TGV).csv` | Contains all Talent Variables (TV) and Talent Group Variables (TGV) along with their default weights & correlation |
+| `Talent Variables (TV) and Talent Group Variables (TGV).csv` | Contains all Talent Variables (TV) and Talent Group Variables (TGV) along with their TGV default weights & TV correlation |
 
 ---
 
