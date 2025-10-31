@@ -185,7 +185,7 @@ all_employees AS (
 ),
 
 -- ==========================================================
--- TV MATCH RATE CALCULATION
+-- TV MATCH RATE CALCULATION -- Cap match rate at 100% for meaningful interpretation
 -- ==========================================================
 tv_match_calc AS (
   SELECT
@@ -195,10 +195,10 @@ tv_match_calc AS (
            AND a.baseline_score ~ '^[0-9\\.\-]+$'
            AND a.user_score ~ '^[0-9\\.\-]+$'
       THEN ROUND(
-        GREATEST(0, LEAST(
+        GREATEST(0, LEAST( 
           100,
           100 - ABS(
-            (COALESCE(a.user_score, '0')::numeric - a.baseline_score::numeric)
+            (COALESCE(a.user_score, '0')::numeric - a.baseline_score::numeric)  
             / NULLIF(a.baseline_score::numeric, 0)
           ) * 100
         )),
