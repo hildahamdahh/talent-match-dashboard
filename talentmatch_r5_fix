@@ -24,7 +24,7 @@ LANGUAGE SQL
 AS $$
 WITH
 -- ==========================================================
--- 0️⃣ CUSTOM TGV WEIGHT PARSING (AMAN MESKI {} ATAU NULL)
+-- CUSTOM TGV WEIGHT PARSING (AMAN MESKI {} ATAU NULL)
 -- ==========================================================
 tgv_weight_custom AS (
   SELECT
@@ -37,7 +37,7 @@ tgv_weight_custom AS (
 
 
 -- ==========================================================
--- 1️⃣ EMPLOYEE DETAIL
+-- EMPLOYEE DETAIL
 -- ==========================================================
 emp_detail AS (
   SELECT DISTINCT
@@ -51,7 +51,7 @@ emp_detail AS (
 ),
 
 -- ==========================================================
--- 2️⃣ TV WEIGHT CALCULATION
+-- TV WEIGHT CALCULATION
 -- ==========================================================
 tv_weight_base AS (
   SELECT
@@ -91,7 +91,7 @@ tv_weight_calc AS (
 ),
 
 -- ==========================================================
--- 3️⃣ BASELINE CALCULATION
+-- BASELINE CALCULATION
 -- ==========================================================
 benchmark_raw AS (
   SELECT
@@ -143,7 +143,7 @@ tv_baseline AS (
 ),
 
 -- ==========================================================
--- 4️⃣ JOIN TV_WEIGHT + BASELINE
+-- JOIN TV_WEIGHT + BASELINE
 -- ==========================================================
 tv_master AS (
   SELECT
@@ -158,7 +158,7 @@ tv_master AS (
 ),
 
 -- ==========================================================
--- 5️⃣ ALL EMPLOYEE + BASELINE + USER SCORE
+-- ALL EMPLOYEE + BASELINE + USER SCORE
 -- ==========================================================
 all_employees AS (
   SELECT
@@ -185,7 +185,7 @@ all_employees AS (
 ),
 
 -- ==========================================================
--- 6️⃣ TV MATCH RATE CALCULATION
+-- TV MATCH RATE CALCULATION
 -- ==========================================================
 tv_match_calc AS (
   SELECT
@@ -217,7 +217,7 @@ tv_match_calc AS (
 ),
 
 -- ==========================================================
--- 7️⃣ TGV MATCH RATE
+-- TGV MATCH RATE
 -- ==========================================================
 tgv_match_calc AS (
   SELECT
@@ -234,7 +234,7 @@ tgv_match_calc AS (
 ),
 
 -- ==========================================================
--- 8️⃣ FINAL MATCH RATE
+-- FINAL MATCH RATE
 -- ==========================================================
 final_match_calc AS (
   SELECT
@@ -249,7 +249,7 @@ final_match_calc AS (
 )
 
 -- ==========================================================
--- ✅ FINAL OUTPUT (SAFE UNTUK KOSONG / NULL PARAM)
+-- FINAL OUTPUT (SAFE UNTUK KOSONG / NULL PARAM)
 -- ==========================================================
 SELECT
   a.employee_id,
