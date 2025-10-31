@@ -48,7 +48,7 @@ You must upload the following two tables to Supabase:
 1. employee_tv_scores → Contains all employee records, including both benchmark (top performers) and non-benchmark employees.  
 You must also upload a duplicate of this table named all_employee. The employee_tv_scores table is primarily used for benchmark selection, while all_employee serves as the comparison dataset during the scoring process.  
 2. tv_tgv → Upload the file “Talent Variables (TV) and Talent Group Variables (TGV)” and rename the table to tv_tgv in Supabase.  
-The tv_tgv table is used by the talentmatch_r5_fix function to read and apply custom TGV weights when users adjust weightings in the Streamlit app.
+The tv_tgv table is used by the talentmatch_r5_fix function to read and apply custom TGV weights when users adjust weightings in the Streamlit app.  
 **⚙️ Supabase Configuration**
 Configure your Supabase credentials inside app.py:  
 ```python
