@@ -198,7 +198,7 @@ tv_match_calc AS (
         GREATEST(0, LEAST( 
           100,
           100 - ABS(
-            (COALESCE(a.user_score, '0')::numeric - a.baseline_score::numeric)  
+            (COALESCE(a.user_score, '0')::numeric - a.baseline_score::numeric)  -- If both scores are 0, return 100 but not weighted in final result
             / NULLIF(a.baseline_score::numeric, 0)
           ) * 100
         )),
