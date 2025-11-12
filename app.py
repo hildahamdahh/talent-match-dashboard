@@ -406,7 +406,8 @@ with tab1:
                     messages=[
                         {"role": "system", "content": "You are an HR Data Analyst providing concise insights."},
                         {"role": "user", "content": prompt}
-                    ]
+                    ],
+                    max_tokens=600
                 )
                 insight_text = response.choices[0].message.content
                 st.success(insight_text)
