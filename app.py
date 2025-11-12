@@ -220,7 +220,8 @@ with tab1:
             "messages": [
                 {"role": "system", "content": "Generate concise job profiles for HR professionals."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            "max_tokens": 700
         }
 
         response = requests.post(
