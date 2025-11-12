@@ -739,7 +739,7 @@ with tab2:
                         labels={"final_match_rate": "Final Match Rate (%)"},
                         color_discrete_sequence=["#4C78A8"]
                     )
-                    st.plotly_chart(fig_hist, use_container_width=True)
+                    st.plotly_chart(fig_hist, use_container_width=True, key="plotly_hist")
     
                     # Top Strengths & Gaps Across TGVs
                     st.markdown("### Top Strengths & Gaps Across TGVs")
@@ -757,7 +757,7 @@ with tab2:
                         color_continuous_scale="Blues",
                         labels={"avg_match_rate": "Avg Match Rate (%)", "tgv_name": "TGV Name"}
                     )
-                    st.plotly_chart(fig_bar, use_container_width=True)
+                    st.plotly_chart(fig_bar, use_container_width=True, key="plotly_bar")
     
                     # Benchmark vs Candidate (Radar Chart)
                     import plotly.graph_objects as go
@@ -791,7 +791,7 @@ with tab2:
                         showlegend=True,
                         title=f"TGV Comparison: {selected_emp} vs Benchmark"
                     )
-                    st.plotly_chart(fig_radar, use_container_width=True)
+                    st.plotly_chart(fig_radar, use_container_width=True, key=f"plotly_radar_{selected_emp})
     
                     # AI Summary Insights
                     st.markdown("### AI Summary Insights")
