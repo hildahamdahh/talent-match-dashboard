@@ -489,7 +489,8 @@ with tab2:
             "messages": [
                 {"role": "system", "content": "You generate short, structured job detail lists for HR systems."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            "max_tokens": 700
         }
 
         try:
