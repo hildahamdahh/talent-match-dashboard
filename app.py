@@ -791,7 +791,7 @@ with tab2:
                         showlegend=True,
                         title=f"TGV Comparison: {selected_emp} vs Benchmark"
                     )
-                    st.plotly_chart(fig_radar, use_container_width=True, key=f"plotly_radar_{selected_emp})
+                    st.plotly_chart(fig_radar, use_container_width=True, key=f"plotly_radar_{selected_emp}")
     
                     # AI Summary Insights
                     st.markdown("### AI Summary Insights")
