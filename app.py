@@ -628,7 +628,8 @@ with tab2:
             "messages": [
                 {"role": "system", "content": "You map HR job details to internal competency domains."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            "max_tokens": 700
         }
     
         response = requests.post(
@@ -827,7 +828,8 @@ with tab2:
                                 messages=[
                                     {"role": "system", "content": "Kamu adalah HR Data Analyst yang menulis insight singkat dan tajam."},
                                     {"role": "user", "content": prompt}
-                                ]
+                                ],
+                                max_tokens=600
                             )
     
                             insight_text = response.choices[0].message.content
