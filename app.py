@@ -454,7 +454,7 @@ with tab2:
 
     st.markdown('<div class="job-details-container"><div class="job-details-box">', unsafe_allow_html=True)
 
-    st.subheader("3️⃣ Job Details (AI Suggestions + Editable Lists)")
+    st.subheader("Job Details (AI Suggestions + Editable Lists)")
     st.caption("Tambahkan atau hapus sesuai kebutuhan. AI akan regenerate otomatis jika role berubah.")
 
     # ====== Helper: Generate AI Job Details ======
